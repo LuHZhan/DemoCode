@@ -7,9 +7,18 @@
 #include "EngineUtils.h"
 #include "Blueprint/GameViewportSubsystem.h"
 
-void UTraceSubsystem::TraceSetting(FTraceSettingInfo NewTraceModule)
+UTraceSubsystem::UTraceSubsystem()
+{
+}
+
+void UTraceSubsystem::TraceSetting(FTraceSettingInfo NewTraceModule, FString ProjectFunctionName)
 {
 	TraceModule = NewTraceModule;
+	if (ProjectFunctionName == "VerticalRectangle")
+	{
+		const FVector2D Size = UWidgetLayoutLibrary::GetViewportSize(GetWorld());
+		TraceModule.ProjectFuncPtr = MakeShareable(new VerticalRectanglePF(Size.X, Size.Y, 10000.0f));
+	}
 }
 
 void UTraceSubsystem::Start()
@@ -28,7 +37,6 @@ void UTraceSubsystem::End()
 	}
 }
 
-
 void UTraceSubsystem::Update(float DeltaTime)
 {
 	if (TraceModule.CurTraceModule == ETraceModule::DisplayedUI)
@@ -40,7 +48,8 @@ void UTraceSubsystem::Update(float DeltaTime)
 			const float FOVSize = TraceModule.ViewportCamera.Get()->FieldOfView;
 
 			float ArcoDegrees;
-			if (WorldLocationIsExistViewport(ObjectLocation, CameraLocation, FOVSize, TraceModule.ViewportCamera.Get()->GetForwardVector(), ArcoDegrees))
+			if (CheckWorldLocationIsExistViewport(ObjectLocation, CameraLocation, FOVSize, TraceModule.ViewportCamera.Get()->GetForwardVector(),
+			                                      ArcoDegrees))
 			{
 				if (GetWorld())
 				{
@@ -89,29 +98,46 @@ TWeakObjectPtr<ASceneUIActor>* UTraceSubsystem::FindOrCreateUIActor(const TTuple
 void UTraceSubsystem::CreateUIToViewport(const TTuple<FString, TWeakObjectPtr<AActor>>& It)
 {
 	const TSubclassOf<UUserWidget> WidgetClass = ITracedInterface::Execute_GetCustomUIStyle(It.Value.Get());
-	// if (UUserWidget* UIPtr = CreateWidget(It.Value.Get(), WidgetClass))
-	// {
-	// 	TraceUIWidgetMap.Add(It.Value.Get(), TWeakObjectPtr<UUserWidget>(UIPtr));
-	// }
+	if (UUserWidget* UIPtr = CreateWidget<UUserWidget>(GetWorld(), WidgetClass))
+	{
+		TraceUIWidgetMap.Add(It.Value.Get(), TWeakObjectPtr<UUserWidget>(UIPtr));
+	}
 }
 
 void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>& It)
 {
 	if (!TraceUIWidgetMap.Contains(It.Value))
 		return;
-	FVector ObjectLocation = It.Value.Get()->GetActorLocation();
-	TWeakObjectPtr<UUserWidget>* UIPrt = TraceUIWidgetMap.Find(It.Value);
+
+	const FVector ObjectLocation = It.Value.Get()->GetActorLocation();
+	const TWeakObjectPtr<UUserWidget>* UIPrt = TraceUIWidgetMap.Find(It.Value);
 	if (!UIPrt->Get()->IsInViewport())
 	{
 		UIPrt->Get()->AddToViewport(TraceModule.UIZOrder);
 	}
 
-	
+	APlayerController* PlayerController = Cast<APlayerController>(TraceModule.ViewportCharacter->GetController());
+	bool a;
+	//TODO:
+	const FVector2D RealXY = GetProjectToScreen(PlayerController, ObjectLocation);
+
+	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) * ProjectViewportScale /
+		UWidgetLayoutLibrary::GetViewportScale(GetWorld());
+	TraceModule.ProjectFuncPtr->Update(ViewportSize.X, ViewportSize.Y);
+	PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetProjectXY(RealXY.X, RealXY.Y);
 }
 
 
-bool UTraceSubsystem::WorldLocationIsExistViewport(FVector ObjectLocation, FVector CameraLocation, const float FOVSize, FVector CameraForward,
-                                                   float& ArcoDegrees) const
+FVector2D UTraceSubsystem::GetWorldLocationToScreenPosition(APlayerController* PlayerController, FVector WorldLocation, bool bPlayerViewportRelative,
+                                                            bool& bProject) const
+{
+	FVector2D ViewportPosition;
+	bProject = UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PlayerController, WorldLocation, ViewportPosition, bPlayerViewportRelative);
+	return ViewportPosition;
+}
+
+bool UTraceSubsystem::CheckWorldLocationIsExistViewport(FVector ObjectLocation, FVector CameraLocation, const float FOVSize, FVector CameraForward,
+                                                        float& ArcoDegrees) const
 {
 	const FVector CameraAtObject = ObjectLocation - CameraLocation;
 
@@ -120,6 +146,11 @@ bool UTraceSubsystem::WorldLocationIsExistViewport(FVector ObjectLocation, FVect
 
 	ArcoDegrees = FMath::Acos(TargetCosValue) * 180 / UE_DOUBLE_PI;
 	return TargetCosValue > PawnFOVCosValue;
+}
+
+FVector2D UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation) const
+{
+	
 }
 
 void UTraceSubsystem::Tick(float DeltaTime)

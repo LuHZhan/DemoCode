@@ -23,6 +23,8 @@ enum ETraceModule
 	AutoTrace,
 };
 
+/* Function of project to viewport */
+
 typedef std::vector<std::pair<float, float>> XYArray;
 
 struct PointInfo
@@ -32,22 +34,46 @@ struct PointInfo
 	std::pair<float, float> NearestXY;
 };
 
-struct BaseProjectFunctionType
+class BaseProjectFunctionType
 {
-	virtual PointInfo PointOfVectorAndFunc(float x, float y) const =0;
+public:
+	virtual PointInfo GetProjectXY(float x, float y) const =0;
 	virtual std::vector<float> Fx(float x) const =0;
+	virtual void Update(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) =0;
 
-	virtual ~BaseProjectFunctionType() = default;
+	BaseProjectFunctionType(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f): Width(NewWidth), Height(NewHeight),
+		NotValidNumber(NewNotValidNumber)
+	{
+	};
+
+	virtual ~BaseProjectFunctionType()
+	{
+	};
+
+	float Width;
+	float Height;
+	float NotValidNumber;
 };
 
-struct VerticalRectanglePF final : public BaseProjectFunctionType
+class VerticalRectanglePF final : public BaseProjectFunctionType
 {
-	VerticalRectanglePF(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f): Width(NewWidth), Height(NewHeight),
-		NotValidNumber(NewNotValidNumber)
+public:
+	VerticalRectanglePF(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f): BaseProjectFunctionType(
+		NewWidth, NewHeight, NewNotValidNumber)
 	{
 		XRange = {(NewWidth / 2) * -1, NewWidth / 2};
 		YRange = {(NewHeight / 2) * -1, NewHeight / 2};
 	};
+
+	virtual void Update(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) override
+	{
+		Width = NewWidth;
+		Height = NewHeight;
+		NotValidNumber = NewNotValidNumber;
+
+		XRange = {(NewWidth / 2) * -1, NewWidth / 2};
+		YRange = {(NewHeight / 2) * -1, NewHeight / 2};
+	}
 
 	virtual std::vector<float> Fx(float x) const override
 	{
@@ -64,7 +90,7 @@ struct VerticalRectanglePF final : public BaseProjectFunctionType
 		return Ys;
 	}
 
-	virtual PointInfo PointOfVectorAndFunc(float x, float y) const override
+	virtual PointInfo GetProjectXY(float x, float y) const override
 	{
 		PointInfo Result;
 		if (x == 0 || y == 0)
@@ -85,31 +111,33 @@ struct VerticalRectanglePF final : public BaseProjectFunctionType
 		return Result;
 	}
 
-	float Width;
-	float Height;
-	float NotValidNumber;
 	std::pair<float, float> XRange;
 	std::pair<float, float> YRange;
 };
+
+/* Function of project to viewport */
 
 USTRUCT(Blueprintable, BlueprintType)
 struct FTraceSettingInfo
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category="FTraceSettingInfo")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="FTraceSettingInfo")
 	TEnumAsByte<ETraceModule> CurTraceModule;
 
-	UPROPERTY(EditAnywhere, Category="FTraceSettingInfo")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="FTraceSettingInfo")
 	TWeakObjectPtr<ACharacter> ViewportCharacter;
 
-	UPROPERTY(EditAnywhere, Category="FTraceSettingInfo")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="FTraceSettingInfo")
 	TWeakObjectPtr<UCameraComponent> ViewportCamera;
 
-	UPROPERTY(EditAnywhere, Category="FTraceSettingInfo")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="FTraceSettingInfo")
 	int32 UIZOrder = 10000;
 
-	BaseProjectFunctionType* ProjectFuncPtr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="FTraceSettingInfo")
+	TSubclassOf<UUserWidget> ViewportContent;
+
+	TSharedPtr<BaseProjectFunctionType> ProjectFuncPtr;
 
 	FTraceSettingInfo(): CurTraceModule(ETraceModule::DisplayedUI), ViewportCharacter(nullptr), ViewportCamera(nullptr), ProjectFuncPtr(nullptr)
 	{

@@ -29,8 +29,10 @@ class TRACE_API UTraceSubsystem : public UTickableWorldSubsystem
 	GENERATED_BODY()
 
 public:
+	UTraceSubsystem();
+
 	UFUNCTION(BlueprintCallable, Category="TraceCore")
-	void TraceSetting(FTraceSettingInfo NewTraceModule);
+	void TraceSetting(FTraceSettingInfo NewTraceModule, FString ProjectFunctionName = "VerticalRectangle");
 
 	UFUNCTION(BlueprintCallable, Category="TraceCore")
 	void Start();
@@ -45,7 +47,7 @@ public:
 	void CreateUIToViewport(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
 	void MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
 
-	/**/
+	/* Function */
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="TraceCore|Function")
 	bool CharacterIsMoveOrRotate() const
@@ -59,25 +61,21 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="TraceCore|Function")
-	FVector2D GetWorldLocationToScreenPosition(APlayerController* PlayerController, FVector WorldLocation, bool bPlayerViewportRelative) const
-	{
-		FVector2D ViewportPosition;
-		UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PlayerController, WorldLocation, ViewportPosition, bPlayerViewportRelative);
-		return ViewportPosition;
-	}
-
+	FVector2D GetWorldLocationToScreenPosition(APlayerController* PlayerController, FVector WorldLocation, bool bPlayerViewportRelative, bool& bProject) const;
+	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="TraceCore|Function")
-	bool WorldLocationIsExistViewport(FVector ObjectLocation, FVector CameraLocation, const float FOVSize, FVector CameraForward, float& ArcoDegrees) const;
+	bool CheckWorldLocationIsExistViewport(FVector ObjectLocation, FVector CameraLocation, const float FOVSize, FVector CameraForward, float& ArcoDegrees) const;
 
-	/**/
+	FVector2D GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation) const;
+	
+	/* Function */
+	/* Override */
 
 	virtual void Tick(float DeltaTime) override;
 	virtual TStatId GetStatId() const override;
 
-	/**/
-
-	UPROPERTY()
-	FTraceSettingInfo TraceModule;
+	/* Override */
+	/* Delegate */
 
 	UPROPERTY(BlueprintAssignable)
 	FOnObjectTraceStarted OnObjectTraceStarted;
@@ -88,8 +86,16 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnObjectTraceCompleted OnObjectTraceCompleted;
 
-	UPROPERTY(BlueprintReadOnly, Category="TraceData")
-	bool bIsTracing;
+	/* Delegate */
+
+	UPROPERTY()
+	FTraceSettingInfo TraceModule;
+
+	UPROPERTY(EditAnywhere, Category="TraceSubsystemData")
+	float ProjectViewportScale = 1.0f;
+
+	UPROPERTY(BlueprintReadOnly, Category="TraceSubsystemData")
+	bool bIsTracing = false;
 
 private:
 	bool TraceInit();

@@ -25,4 +25,6 @@ Demo1/Content/
 
 Demo1/Plugins/MyPlugin/
 
-Demo1/Plugins/Trace/
+Demo1/Plugins/Trace/Binaries
+
+Demo1/Plugins/Trace/Intermediate
