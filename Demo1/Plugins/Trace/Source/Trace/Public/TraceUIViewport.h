@@ -7,7 +7,7 @@
 
 // #include "TraceDefinition.h"
 
-#include "TracUIViewport.generated.h"
+#include "TraceUIViewport.generated.h"
 
 /**
  * 
@@ -34,7 +34,7 @@ struct FPlaneMoveData
 };
 
 UCLASS(Blueprintable, BlueprintType)
-class TRACE_API UTracUIViewport : public UUserWidget
+class TRACE_API UTraceUIViewport : public UUserWidget
 {
 	GENERATED_BODY()
 

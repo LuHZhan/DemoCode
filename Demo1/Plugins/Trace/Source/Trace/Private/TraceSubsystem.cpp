@@ -6,6 +6,7 @@
 
 #include "EngineUtils.h"
 #include "Blueprint/GameViewportSubsystem.h"
+#include "Kismet/GameplayStatics.h"
 
 UTraceSubsystem::UTraceSubsystem()
 {
@@ -19,13 +20,27 @@ void UTraceSubsystem::TraceSetting(FTraceSettingInfo NewTraceModule, FString Pro
 		const FVector2D Size = UWidgetLayoutLibrary::GetViewportSize(GetWorld());
 		TraceModule.ProjectFuncPtr = MakeShareable(new VerticalRectanglePF(Size.X, Size.Y, 10000.0f));
 	}
+	bIsNeedfulSetting = true;
 }
 
 void UTraceSubsystem::Start()
 {
 	if (!bIsTracing)
 	{
-		bIsTracing = true;
+		if (TraceInit() && bIsNeedfulSetting)
+		{
+			if (!ViewportWidgetWeakPtr.Get())
+			{
+				ViewportWidgetWeakPtr = CreateWidget<UTraceUIViewport>(GetWorld(), TraceModule.ViewportContainerClass);
+				ViewportWidgetWeakPtr->AddToViewport();
+			}
+
+			bIsTracing = true;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Trace Start Failed,Because TraceSetting is not called"));
+		}
 	}
 }
 
@@ -48,6 +63,7 @@ void UTraceSubsystem::Update(float DeltaTime)
 			const float FOVSize = TraceModule.ViewportCamera.Get()->FieldOfView;
 
 			float ArcoDegrees;
+			// TODO:完整的实现应该不需要检测
 			if (CheckWorldLocationIsExistViewport(ObjectLocation, CameraLocation, FOVSize, TraceModule.ViewportCamera.Get()->GetForwardVector(),
 			                                      ArcoDegrees))
 			{
@@ -76,6 +92,7 @@ void UTraceSubsystem::Update(float DeltaTime)
 void UTraceSubsystem::Clear()
 {
 }
+
 
 TWeakObjectPtr<ASceneUIActor>* UTraceSubsystem::FindOrCreateUIActor(const TTuple<FString, TWeakObjectPtr<AActor>>& PairIt, const FVector& ObjectLocation)
 {
@@ -111,20 +128,16 @@ void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>
 
 	const FVector ObjectLocation = It.Value.Get()->GetActorLocation();
 	const TWeakObjectPtr<UUserWidget>* UIPrt = TraceUIWidgetMap.Find(It.Value);
-	if (!UIPrt->Get()->IsInViewport())
-	{
-		UIPrt->Get()->AddToViewport(TraceModule.UIZOrder);
-	}
+	// if (!UIPrt->Get()->IsInViewport())
+	// {
+	// 	UIPrt->Get()->AddToViewport(TraceModule.UIZOrder);
+	// }
 
-	APlayerController* PlayerController = Cast<APlayerController>(TraceModule.ViewportCharacter->GetController());
-	bool a;
-	//TODO:
-	const FVector2D RealXY = GetProjectToScreen(PlayerController, ObjectLocation);
 
-	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) * ProjectViewportScale /
-		UWidgetLayoutLibrary::GetViewportScale(GetWorld());
+	const FVector2D RealXY = GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()), ObjectLocation);
+	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld());
 	TraceModule.ProjectFuncPtr->Update(ViewportSize.X, ViewportSize.Y);
-	PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetProjectXY(RealXY.X, RealXY.Y);
+	PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y);
 }
 
 
@@ -148,9 +161,29 @@ bool UTraceSubsystem::CheckWorldLocationIsExistViewport(FVector ObjectLocation, 
 	return TargetCosValue > PawnFOVCosValue;
 }
 
-FVector2D UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation) const
+FVector2D UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation)
 {
-	
+	FMatrix ViewMatrix;
+	FMatrix ProjectionMatrix;
+	FMatrix ViewProjectionMatrix;
+	UGameplayStatics::GetViewProjectionMatrix(PlayerController->PlayerCameraManager->GetCameraCacheView(), ViewMatrix, ProjectionMatrix,
+	                                          ViewProjectionMatrix);
+
+	FVector2D Result(ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1)).X, ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1)).Y);
+	UE_LOG(LogTemp, Warning, TEXT("X==%f,Y==%f"), Result.X, Result.Y);
+	return Result;
+}
+
+FVector2D UTraceSubsystem::TestGetScreenPosition(APlayerController* PlayerController, FVector WorldLocation)
+{
+	const FVector2D RealXY = GetProjectToScreen(PlayerController, WorldLocation);
+
+	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) *
+		ProjectViewportScale;
+	TraceModule.ProjectFuncPtr->Update(ViewportSize.X, ViewportSize.Y);
+	const PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y);
+
+	return FVector2D(XYInfo.NearestXY.first, XYInfo.NearestXY.second);
 }
 
 void UTraceSubsystem::Tick(float DeltaTime)

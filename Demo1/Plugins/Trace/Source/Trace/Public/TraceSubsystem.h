@@ -7,6 +7,8 @@
 
 #include "TraceDefinition.h"
 #include "SceneUIActor.h"
+// #include "TraceUIViewport.h"
+#include "TraceUIViewport.h"
 
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/CapsuleComponent.h"
@@ -42,7 +44,7 @@ public:
 
 	void Update(float DeltaTime);
 	void Clear();
-
+	
 	TWeakObjectPtr<ASceneUIActor>* FindOrCreateUIActor(const TTuple<FString, TWeakObjectPtr<AActor>>& PairIt, const FVector& ObjectLocation);
 	void CreateUIToViewport(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
 	void MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
@@ -61,20 +63,25 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="TraceCore|Function")
-	FVector2D GetWorldLocationToScreenPosition(APlayerController* PlayerController, FVector WorldLocation, bool bPlayerViewportRelative, bool& bProject) const;
-	
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="TraceCore|Function")
-	bool CheckWorldLocationIsExistViewport(FVector ObjectLocation, FVector CameraLocation, const float FOVSize, FVector CameraForward, float& ArcoDegrees) const;
+	FVector2D GetWorldLocationToScreenPosition(APlayerController* PlayerController, FVector WorldLocation, bool bPlayerViewportRelative,
+	                                           bool& bProject) const;
 
-	FVector2D GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="TraceCore|Function")
+	bool CheckWorldLocationIsExistViewport(FVector ObjectLocation, FVector CameraLocation, const float FOVSize, FVector CameraForward,
+	                                       float& ArcoDegrees) const;
+
+	static FVector2D GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation);
+
+	UFUNCTION(BlueprintCallable)
+	FVector2D TestGetScreenPosition(APlayerController* PlayerController, FVector WorldLocation);
 	
 	/* Function */
-	/* Override */
+
 
 	virtual void Tick(float DeltaTime) override;
 	virtual TStatId GetStatId() const override;
 
-	/* Override */
+
 	/* Delegate */
 
 	UPROPERTY(BlueprintAssignable)
@@ -92,10 +99,15 @@ public:
 	FTraceSettingInfo TraceModule;
 
 	UPROPERTY(EditAnywhere, Category="TraceSubsystemData")
-	float ProjectViewportScale = 1.0f;
+	float ProjectViewportScale = 0.9f;
 
 	UPROPERTY(BlueprintReadOnly, Category="TraceSubsystemData")
 	bool bIsTracing = false;
+
+	UPROPERTY(BlueprintReadOnly, Category="TraceSubsystemData")
+	bool bIsNeedfulSetting = false;
+
+	TWeakObjectPtr<UTraceUIViewport> ViewportWidgetWeakPtr;
 
 private:
 	bool TraceInit();

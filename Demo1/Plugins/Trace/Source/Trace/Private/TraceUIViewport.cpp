@@ -1,9 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "TracUIViewport.h"
+#include "TraceUIViewport.h"
 
-void UTracUIViewport::AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWidget> UI, const FVector2D& XY)
+void UTraceUIViewport::AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWidget> UI, const FVector2D& XY)
 {
 	if (UIData.Contains(Name))
 	{
@@ -17,13 +17,13 @@ void UTracUIViewport::AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWid
 	UpdateCanvas();
 }
 
-void UTracUIViewport::RemoveUI(const FString& Name)
+void UTraceUIViewport::RemoveUI(const FString& Name)
 {
 	UIData.Remove(Name);
 	UpdateCanvas();
 }
 
-void UTracUIViewport::ClearAllUI()
+void UTraceUIViewport::ClearAllUI()
 {
 	UIData.Empty();
 	UpdateCanvas();

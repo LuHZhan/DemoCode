@@ -4,6 +4,7 @@
 
 // #include <vector>
 #include "CoreMinimal.h"
+#include "map"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Actor.h"
 #include "TraceDefinition.generated.h"
@@ -14,6 +15,7 @@ class TRACE_API ATraceDefinition : public AActor
 	GENERATED_BODY()
 };
 
+// TODO: 目前只实现了DisplayedUI，后续应该针对每一个TraceActor实现不同的Module
 UENUM(Blueprintable, BlueprintType)
 enum ETraceModule
 {
@@ -27,8 +29,35 @@ enum ETraceModule
 
 typedef std::vector<std::pair<float, float>> XYArray;
 
+enum Quadrant
+{
+	One = 0,
+	Two,
+	Three,
+	Four
+};
+
+enum Direction
+{
+	Left = 0,
+	Right,
+	Up,
+	Down
+};
+
+enum Axis
+{
+	X = 0,
+	Y,
+	Z,
+	W,
+};
+
 struct PointInfo
 {
+	PointInfo(): IsValid(false), XYs({}), NearestXY({})
+	{
+	};
 	bool IsValid;
 	XYArray XYs;
 	std::pair<float, float> NearestXY;
@@ -37,8 +66,45 @@ struct PointInfo
 class BaseProjectFunctionType
 {
 public:
-	virtual PointInfo GetProjectXY(float x, float y) const =0;
+	virtual PointInfo GetCrossLocation(float x, float y) const =0;
 	virtual std::vector<float> Fx(float x) const =0;
+
+	/**
+	 * 
+	 * @param x Vector X
+	 * @param y Vector Y
+	 * @return What quadrant does the coordinate lie in?
+	 */
+	static Quadrant GetQuadrant(float x, float y)
+	{
+		if (x > 0 && y > 0)
+		{
+			return One;
+		}
+		else if (x < 0 && y > 0)
+		{
+			return Two;
+		}
+		else if (x < 0 && y < 0)
+		{
+			return Three;
+		}
+		else return Four;
+	}
+
+	/**
+	 * TODO:只实现了左右的区分，应该还有上下的区分
+	 * @param x1 Target	Vector X
+	 * @param y1 Target	Vector Y
+	 * @param x2 Const	Vector X
+	 * @param y2 Const	Vector Y
+	 * @return Vector1 is at the position of Vector2
+	 */
+	static Direction GetDirection(float x1, float y1, const float x2, const float y2)
+	{
+		return (x1 * y2) - (x2 * y1) > 0 ? Direction::Right : Direction::Left;
+	}
+
 	virtual void Update(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) =0;
 
 	BaseProjectFunctionType(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f): Width(NewWidth), Height(NewHeight),
@@ -63,6 +129,24 @@ public:
 	{
 		XRange = {(NewWidth / 2) * -1, NewWidth / 2};
 		YRange = {(NewHeight / 2) * -1, NewHeight / 2};
+
+		QuadrantMap = {
+			{Quadrant::One, {XRange.second, YRange.second}},
+			{Quadrant::Two, {XRange.first, YRange.second}},
+			{Quadrant::Three, {XRange.first, YRange.first}},
+			{Quadrant::Four, {XRange.second, YRange.first}}
+		};
+
+		UnKnownAxisMap = {
+			{{Quadrant::One, Direction::Left}, {Axis::X}},
+			{{Quadrant::One, Direction::Right}, {Axis::Y}},
+			{{Quadrant::Two, Direction::Left}, {Axis::Y}},
+			{{Quadrant::Two, Direction::Right}, {Axis::X}},
+			{{Quadrant::Three, Direction::Left}, {Axis::X}},
+			{{Quadrant::Three, Direction::Right}, {Axis::Y}},
+			{{Quadrant::Four, Direction::Left}, {Axis::Y}},
+			{{Quadrant::Four, Direction::Right}, {Axis::X}}
+		};
 	};
 
 	virtual void Update(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) override
@@ -73,6 +157,14 @@ public:
 
 		XRange = {(NewWidth / 2) * -1, NewWidth / 2};
 		YRange = {(NewHeight / 2) * -1, NewHeight / 2};
+
+		QuadrantMap.clear();
+		QuadrantMap = {
+			{Quadrant::One, {XRange.second, YRange.second}},
+			{Quadrant::Two, {XRange.first, YRange.second}},
+			{Quadrant::Three, {XRange.first, YRange.first}},
+			{Quadrant::Four, {XRange.second, YRange.first}}
+		};
 	}
 
 	virtual std::vector<float> Fx(float x) const override
@@ -89,8 +181,8 @@ public:
 		}
 		return Ys;
 	}
-
-	virtual PointInfo GetProjectXY(float x, float y) const override
+	
+	virtual PointInfo GetCrossLocation(float x, float y) const override
 	{
 		PointInfo Result;
 		if (x == 0 || y == 0)
@@ -99,20 +191,47 @@ public:
 			return Result;
 		}
 
-		// y = ax 
+		const Quadrant Position = GetQuadrant(x, y);
+		const float XMax = QuadrantMap.find(Position)->second.first;
+		const float YMax = QuadrantMap.find(Position)->second.second;
+		const Direction VectorDirection = GetDirection(x, y, XMax, YMax);
+
 		const float a = y / x;
-		float MinusX = YRange.first / a;
-		float PositiveX = YRange.second / a;
-		Result.XYs.push_back({MinusX, YRange.first});
-		Result.XYs.push_back({PositiveX, YRange.second});
-		Result.NearestXY.first = y > 0 ? PositiveX : MinusX;
-		Result.NearestXY.second = YRange.second;
-		Result.IsValid = true;
+		if (UnKnownAxisMap.contains({Position, VectorDirection}))
+		{
+			const Axis CurAxis = UnKnownAxisMap.find({Position, VectorDirection})->second;
+			// TODO:这里的写法可以优化
+			if (CurAxis == Axis::X)
+			{
+				float XValue = YMax / a;
+				Result.XYs.push_back({XValue, YMax});
+				Result.XYs.push_back({XValue * -1, YMax * -1});
+				Result.NearestXY = {XValue, YMax};
+				Result.IsValid = true;
+			}
+			else if (CurAxis == Axis::Y)
+			{
+				float YValue = XMax * a;
+				Result.XYs.push_back({XMax, YValue});
+				Result.XYs.push_back({XMax * -1, YValue * -1});
+				Result.NearestXY = {XMax, YValue};
+				Result.IsValid = true;
+			}
+		}
 		return Result;
+		// float ValueMinX = YRange.first / a;
+		// float ValueMaxX = YRange.second / a;
+		// Result.XYs.push_back({ValueMinX, YRange.first});
+		// Result.XYs.push_back({ValueMaxX, YRange.second});
+		// Result.NearestXY.first = y > 0 ? ValueMaxX : ValueMinX;
+		// Result.NearestXY.second = YRange.second;
+		// Result.IsValid = true;
 	}
 
 	std::pair<float, float> XRange;
 	std::pair<float, float> YRange;
+	std::map<Quadrant, std::pair<float, float>> QuadrantMap;
+	std::map<std::pair<Quadrant, Direction>, Axis> UnKnownAxisMap;
 };
 
 /* Function of project to viewport */
@@ -135,7 +254,7 @@ struct FTraceSettingInfo
 	int32 UIZOrder = 10000;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="FTraceSettingInfo")
-	TSubclassOf<UUserWidget> ViewportContent;
+	TSubclassOf<UUserWidget> ViewportContainerClass;
 
 	TSharedPtr<BaseProjectFunctionType> ProjectFuncPtr;
 
