@@ -10,8 +10,8 @@ ASceneUIActor::ASceneUIActor()
 	PrimaryActorTick.bCanEverTick = true;
 
 	UI = CreateDefaultSubobject<UWidgetComponent>(TEXT("UI"));
-	UI->SetWidgetSpace(EWidgetSpace::Screen);
-	UI->SetWidgetClass(UIClass);
+	bVisible = true;
+	bIsSelected = true;
 }
 
 void ASceneUIActor::SetVisible(bool NewVisible, bool bForce)
@@ -19,14 +19,14 @@ void ASceneUIActor::SetVisible(bool NewVisible, bool bForce)
 	if (bForce)
 	{
 		bVisible = NewVisible;
-		OnSelected(bVisible);
+		OnSetVisible(bVisible);
 	}
 	else
 	{
 		if (NewVisible != bVisible)
 		{
 			bVisible = NewVisible;
-			OnSelected(bVisible);
+			OnSetVisible(bVisible);
 		}
 	}
 }
@@ -38,6 +38,11 @@ void ASceneUIActor::SetSelected(bool bSelected, bool bDispatchSelectedEvent)
 		bIsSelected = bSelected;
 		OnSelected(bSelected);
 	}
+}
+
+void ASceneUIActor::OnSetVisible_Implementation(bool NewVisible)
+{
+	UI->SetVisibility(NewVisible);
 }
 
 // Called when the game starts or when spawned

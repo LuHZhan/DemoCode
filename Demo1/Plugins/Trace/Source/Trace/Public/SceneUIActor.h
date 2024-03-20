@@ -22,11 +22,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void SetSelected(bool bSelected, bool bDispatchSelectedEvent = true);
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintNativeEvent)
 	void OnSetVisible(bool NewVisible);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnSelected(bool bSelected);
+
+	UFUNCTION(BlueprintCallable)
+	void UpdateUIData()
+	{
+		UI->SetWidgetSpace(EWidgetSpace::Screen);
+		UI->SetWidgetClass(UIClass);
+	}
 
 protected:
 	// Called when the game starts or when spawned

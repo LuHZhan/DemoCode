@@ -41,13 +41,16 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="TraceCore")
 	void End();
-
+	
 	void Update(float DeltaTime);
 	void Clear();
+
 	
 	TWeakObjectPtr<ASceneUIActor>* FindOrCreateUIActor(const TTuple<FString, TWeakObjectPtr<AActor>>& PairIt, const FVector& ObjectLocation);
 	void CreateUIToViewport(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
 	void MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
+	void ToggleViewport(bool NewAnchoring);
+	
 
 	/* Function */
 
@@ -98,6 +101,7 @@ public:
 	UPROPERTY()
 	FTraceSettingInfo TraceModule;
 
+	// TODO: Widget不够流畅，可以通过再限定视角的大小去实现流程的切换
 	UPROPERTY(EditAnywhere, Category="TraceSubsystemData")
 	float ProjectViewportScale = 0.9f;
 

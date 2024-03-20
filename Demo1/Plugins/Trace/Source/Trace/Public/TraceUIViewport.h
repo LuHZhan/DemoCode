@@ -39,21 +39,27 @@ class TRACE_API UTraceUIViewport : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(Blueprintable, BlueprintImplementableEvent, Category="TraceUIViewport")
+	UFUNCTION(BlueprintCallable, Category="TraceUIViewport")
+	void Toggle(bool bIsOpen);
+	
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="TraceUIViewport")
 	void Anchoring();
 
-	UFUNCTION(Blueprintable, BlueprintImplementableEvent, Category="TraceUIViewport")
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="TraceUIViewport")
 	void UpdateCanvas();
 
-	UFUNCTION(Blueprintable, Category="TraceUIViewport")
+	UFUNCTION(Category="TraceUIViewport")
 	void AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWidget> UI, const FVector2D& XY);
 
-	UFUNCTION(Blueprintable, Category="TraceUIViewport")
+	UFUNCTION(BlueprintCallable, Category="TraceUIViewport")
 	void RemoveUI(const FString& Name);
 
-	UFUNCTION(Blueprintable, Category="TraceUIViewport")
+	UFUNCTION(BlueprintCallable, Category="TraceUIViewport")
 	void ClearAllUI();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="TraceUIViewport")
 	TMap<FString, FPlaneMoveData> UIData;
+
+	UPROPERTY(BlueprintReadOnly, Category="TraceUIViewport")
+	bool bIsStartAnchoring = false;
 };

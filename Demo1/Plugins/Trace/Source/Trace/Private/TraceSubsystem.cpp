@@ -36,6 +36,8 @@ void UTraceSubsystem::Start()
 			}
 
 			bIsTracing = true;
+			// TODO:这里调用是为了防止进入游戏时因为人物没有移动或者旋转镜头而导致Update完全不触发
+			Update(0.01);
 		}
 		else
 		{
@@ -64,17 +66,20 @@ void UTraceSubsystem::Update(float DeltaTime)
 
 			float ArcoDegrees;
 			// TODO:完整的实现应该不需要检测
-			if (CheckWorldLocationIsExistViewport(ObjectLocation, CameraLocation, FOVSize, TraceModule.ViewportCamera.Get()->GetForwardVector(),
+			if (CheckWorldLocationIsExistViewport(ObjectLocation, CameraLocation, FOVSize * 0.7, TraceModule.ViewportCamera.Get()->GetForwardVector(),
 			                                      ArcoDegrees))
 			{
+				ToggleViewport(false);
 				if (GetWorld())
 				{
 					const TWeakObjectPtr<ASceneUIActor>* UIActor = FindOrCreateUIActor(It, ObjectLocation);
-					UIActor->Get()->SetVisible(true, false);
+					// TODO: 应该将当前是否显示在屏幕内作为一个变量去进行动态判断，发生变化再进行切换
+					UIActor->Get()->SetVisible(true, true);
 				}
 			}
 			else
 			{
+				ToggleViewport(true);
 				if (TraceUIActorMap.Contains(It.Value))
 				{
 					TraceUIActorMap.Find(It.Value)->Get()->SetVisible(false, false);
@@ -104,6 +109,8 @@ TWeakObjectPtr<ASceneUIActor>* UTraceSubsystem::FindOrCreateUIActor(const TTuple
 
 		ASceneUIActor* UIActor = GetWorld()->SpawnActor<ASceneUIActor>(ObjectLocation, FRotator::ZeroRotator, SpawnParameters);
 		UIActor->UIName = PairIt.Key;
+		UIActor->UIClass = ITracedInterface::Execute_GetCustomUIStyle(PairIt.Value.Get());
+		UIActor->UpdateUIData();
 		UIActor->SetVisible(true, false);
 
 		TraceUIActorMap.Add(PairIt.Value, TWeakObjectPtr<ASceneUIActor>(UIActor));
@@ -133,11 +140,20 @@ void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>
 	// 	UIPrt->Get()->AddToViewport(TraceModule.UIZOrder);
 	// }
 
-
 	const FVector2D RealXY = GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()), ObjectLocation);
 	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld());
 	TraceModule.ProjectFuncPtr->Update(ViewportSize.X, ViewportSize.Y);
 	PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y);
+
+	ViewportWidgetWeakPtr->AddOrUpdateUI(It.Key, *UIPrt, {XYInfo.NearestXY.first, XYInfo.NearestXY.second});
+}
+
+void UTraceSubsystem::ToggleViewport(bool NewAnchoring)
+{
+	if (ViewportWidgetWeakPtr->bIsStartAnchoring != NewAnchoring)
+	{
+		ViewportWidgetWeakPtr->Toggle(NewAnchoring);
+	}
 }
 
 
@@ -189,7 +205,7 @@ FVector2D UTraceSubsystem::TestGetScreenPosition(APlayerController* PlayerContro
 void UTraceSubsystem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (bIsTracing && CharacterIsMoveOrRotate())
+	if (bIsTracing /*&& CharacterIsMoveOrRotate()*/)
 	{
 		Update(DeltaTime);
 	}
@@ -207,7 +223,7 @@ bool UTraceSubsystem::TraceInit()
 	{
 		for (FActorIterator It(CurWorld); It; ++It)
 		{
-			if ((*It)->StaticClass()->ImplementsInterface(UTracedInterface::StaticClass()))
+			if ((*It)->GetClass()->ImplementsInterface(UTracedInterface::StaticClass()))
 			{
 				TraceObjectMap.FindOrAdd(ITracedInterface::Execute_GetObjectTraceElementName(*It), TWeakObjectPtr<AActor>(*It));
 				ITracedInterface::Execute_DispatchAddToSubsystem(*It);

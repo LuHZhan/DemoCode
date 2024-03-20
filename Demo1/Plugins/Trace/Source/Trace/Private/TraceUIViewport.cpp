@@ -3,6 +3,18 @@
 
 #include "TraceUIViewport.h"
 
+void UTraceUIViewport::Toggle(bool bIsOpen)
+{
+	bIsStartAnchoring = bIsOpen;
+	for (const TTuple<FString, FPlaneMoveData> Element : UIData)
+	{
+		if (Element.Value.UI->IsVisible() != bIsOpen)
+		{
+			Element.Value.UI->SetVisibility(bIsOpen ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		}
+	}
+}
+
 void UTraceUIViewport::AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWidget> UI, const FVector2D& XY)
 {
 	if (UIData.Contains(Name))
@@ -13,8 +25,9 @@ void UTraceUIViewport::AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWi
 	else
 	{
 		UIData.Add(Name, FPlaneMoveData(UI, XY));
+		UpdateCanvas();
 	}
-	UpdateCanvas();
+	// UpdateCanvas();
 }
 
 void UTraceUIViewport::RemoveUI(const FString& Name)
