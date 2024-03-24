@@ -69,13 +69,35 @@ void UTraceSubsystem::Update(float DeltaTime)
 			if (CheckWorldLocationIsExistViewport(ObjectLocation, CameraLocation, FOVSize * 0.7, TraceModule.ViewportCamera.Get()->GetForwardVector(),
 			                                      ArcoDegrees))
 			{
-				ToggleViewport(false);
-				if (GetWorld())
+				// ToggleViewport(false);
+				// if (GetWorld())
+				// {
+				// 	const TWeakObjectPtr<ASceneUIActor>* UIActor = FindOrCreateUIActor(It, ObjectLocation);
+				// 	// TODO: 应该将当前是否显示在屏幕内作为一个变量去进行动态判断，发生变化再进行切换
+				// 	// UIActor->Get()->SetVisible(true, true);
+				//
+				// 	ToggleViewport(true);
+				// 	// if (TraceUIActorMap.Contains(It.Value))
+				// 	// {
+				// 	// 	TraceUIActorMap.Find(It.Value)->Get()->SetVisible(false, false);
+				// 	// }
+				// 	if (!TraceUIWidgetMap.Contains(It.Value))
+				// 	{
+				// 		CreateUIToViewport(It);
+				// 	}
+				// 	MoveUIWidget(It);
+				// }
+
+				ToggleViewport(true);
+				if (TraceUIActorMap.Contains(It.Value))
 				{
-					const TWeakObjectPtr<ASceneUIActor>* UIActor = FindOrCreateUIActor(It, ObjectLocation);
-					// TODO: 应该将当前是否显示在屏幕内作为一个变量去进行动态判断，发生变化再进行切换
-					UIActor->Get()->SetVisible(true, true);
+					TraceUIActorMap.Find(It.Value)->Get()->SetVisible(false, false);
 				}
+				if (!TraceUIWidgetMap.Contains(It.Value))
+				{
+					CreateUIToViewport(It);
+				}
+				MoveUIWidget(It);
 			}
 			else
 			{
@@ -140,10 +162,13 @@ void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>
 	// 	UIPrt->Get()->AddToViewport(TraceModule.UIZOrder);
 	// }
 
-	const FVector2D RealXY = GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()), ObjectLocation);
+	const FVector2D RealXY = GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()), ObjectLocation,
+	                                            GetRealProjectRange());
 	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld());
 	TraceModule.ProjectFuncPtr->Update(ViewportSize.X, ViewportSize.Y);
 	PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y);
+
+	// UE_LOG(LogTemp, Warning, TEXT("X==%f,Y==%f"), XYInfo.NearestXY.first, XYInfo.NearestXY.second);
 
 	ViewportWidgetWeakPtr->AddOrUpdateUI(It.Key, *UIPrt, {XYInfo.NearestXY.first, XYInfo.NearestXY.second});
 }
@@ -177,22 +202,56 @@ bool UTraceSubsystem::CheckWorldLocationIsExistViewport(FVector ObjectLocation, 
 	return TargetCosValue > PawnFOVCosValue;
 }
 
-FVector2D UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation)
+bool UTraceSubsystem::CheckCoordinateIsExistRange(FVector2D Target, FVector2D Range, bool bIsQequal /*= false*/)
 {
+	if (bIsQequal)
+	{
+		return Target.X >= Range.X * -1 && Target.X <= Range.X && Target.Y >= Range.Y * -1 && Target.Y <= Range.Y;
+	}
+	return Target.X >= Range.X * -1 && Target.X <= Range.X || Target.Y >= Range.Y * -1 && Target.Y <= Range.Y;
+}
+
+FVector2D UTraceSubsystem::GetRealProjectRange() const
+{
+	if (TraceModule.ProjectFuncPtr)
+	{
+		return {TraceModule.ProjectFuncPtr->Width * ProjectViewportScale, TraceModule.ProjectFuncPtr->Height * ProjectViewportScale};
+	}
+	return FVector2D(0, 0);
+}
+
+FVector2D UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D Range)
+{
+	FVector2D Result{-9999, -9999};
+	bool bIsExistViewport = false;
+	bool bIsRange = false;
+	if (bIsExistViewport = UGameplayStatics::ProjectWorldToScreen(PlayerController, WorldLocation, Result, false), bIsExistViewport)
+	{
+		Result.X = Result.X - UWidgetLayoutLibrary::GetViewportSize(GetWorld()).X / 2;
+		// 这里是为了适配用视图矩阵实现的坐标，有统一的通道
+		Result.Y = (Result.Y - UWidgetLayoutLibrary::GetViewportSize(GetWorld()).Y / 2) * -1;
+
+		bIsRange = CheckCoordinateIsExistRange(Result, Range);
+	}
+	if (bIsRange)
+	{
+		return Result;
+	}
+
 	FMatrix ViewMatrix;
 	FMatrix ProjectionMatrix;
 	FMatrix ViewProjectionMatrix;
 	UGameplayStatics::GetViewProjectionMatrix(PlayerController->PlayerCameraManager->GetCameraCacheView(), ViewMatrix, ProjectionMatrix,
 	                                          ViewProjectionMatrix);
 
-	FVector2D Result(ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1)).X, ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1)).Y);
+	Result = FVector2D(ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1)).X, ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1)).Y);
 	UE_LOG(LogTemp, Warning, TEXT("X==%f,Y==%f"), Result.X, Result.Y);
 	return Result;
 }
 
 FVector2D UTraceSubsystem::TestGetScreenPosition(APlayerController* PlayerController, FVector WorldLocation)
 {
-	const FVector2D RealXY = GetProjectToScreen(PlayerController, WorldLocation);
+	const FVector2D RealXY = GetProjectToScreen(PlayerController, WorldLocation, GetRealProjectRange());
 
 	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) *
 		ProjectViewportScale;

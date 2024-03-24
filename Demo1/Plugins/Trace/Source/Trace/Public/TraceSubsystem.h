@@ -41,16 +41,19 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="TraceCore")
 	void End();
-	
+
 	void Update(float DeltaTime);
 	void Clear();
 
-	
+
 	TWeakObjectPtr<ASceneUIActor>* FindOrCreateUIActor(const TTuple<FString, TWeakObjectPtr<AActor>>& PairIt, const FVector& ObjectLocation);
 	void CreateUIToViewport(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
 	void MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
 	void ToggleViewport(bool NewAnchoring);
-	
+
+	UFUNCTION(BlueprintCallable)
+	FVector2D GetRealProjectRange() const;
+
 
 	/* Function */
 
@@ -73,11 +76,15 @@ public:
 	bool CheckWorldLocationIsExistViewport(FVector ObjectLocation, FVector CameraLocation, const float FOVSize, FVector CameraForward,
 	                                       float& ArcoDegrees) const;
 
-	static FVector2D GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation);
+	UFUNCTION(BlueprintCallable)
+	bool CheckCoordinateIsExistRange(FVector2D Target, FVector2D Range, bool bIsQequal = false);
+
+	UFUNCTION(BlueprintCallable)
+	FVector2D GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D Range);
 
 	UFUNCTION(BlueprintCallable)
 	FVector2D TestGetScreenPosition(APlayerController* PlayerController, FVector WorldLocation);
-	
+
 	/* Function */
 
 

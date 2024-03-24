@@ -108,7 +108,7 @@ public:
 	virtual void Update(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) =0;
 
 	BaseProjectFunctionType(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f): Width(NewWidth), Height(NewHeight),
-		NotValidNumber(NewNotValidNumber)
+	                                                                                                            NotValidNumber(NewNotValidNumber)
 	{
 	};
 
@@ -181,13 +181,21 @@ public:
 		}
 		return Ys;
 	}
-	
+
 	virtual PointInfo GetCrossLocation(float x, float y) const override
 	{
 		PointInfo Result;
 		if (x == 0 || y == 0)
 		{
 			Result.IsValid = false;
+			return Result;
+		}
+
+		if (FMath::Clamp(x, XRange.first, XRange.second) && FMath::Clamp(y, YRange.first, YRange.second))
+		{
+			Result.XYs.push_back({x, y});
+			Result.NearestXY = {x, y};
+			Result.IsValid = true;
 			return Result;
 		}
 
