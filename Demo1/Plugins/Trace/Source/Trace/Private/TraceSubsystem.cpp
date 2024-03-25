@@ -157,18 +157,18 @@ void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>
 
 	const FVector ObjectLocation = It.Value.Get()->GetActorLocation();
 	const TWeakObjectPtr<UUserWidget>* UIPrt = TraceUIWidgetMap.Find(It.Value);
-	// if (!UIPrt->Get()->IsInViewport())
-	// {
-	// 	UIPrt->Get()->AddToViewport(TraceModule.UIZOrder);
-	// }
 
-	const FVector2D RealXY = GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()), ObjectLocation,
-	                                            GetRealProjectRange());
-	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld());
+	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) *
+		ProjectViewportScale;
 	TraceModule.ProjectFuncPtr->Update(ViewportSize.X, ViewportSize.Y);
-	PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y);
 
-	// UE_LOG(LogTemp, Warning, TEXT("X==%f,Y==%f"), XYInfo.NearestXY.first, XYInfo.NearestXY.second);
+	const FVector2D Range = GetProjectCoordinateLimit();
+	const FVector2D RealXY = GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()),
+	                                            ObjectLocation,
+	                                            Range
+	);
+
+	PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y);
 
 	ViewportWidgetWeakPtr->AddOrUpdateUI(It.Key, *UIPrt, {XYInfo.NearestXY.first, XYInfo.NearestXY.second});
 }
@@ -208,14 +208,14 @@ bool UTraceSubsystem::CheckCoordinateIsExistRange(FVector2D Target, FVector2D Ra
 	{
 		return Target.X >= Range.X * -1 && Target.X <= Range.X && Target.Y >= Range.Y * -1 && Target.Y <= Range.Y;
 	}
-	return Target.X >= Range.X * -1 && Target.X <= Range.X || Target.Y >= Range.Y * -1 && Target.Y <= Range.Y;
+	return Target.X >= Range.X * -1 && Target.X <= Range.X && Target.Y >= Range.Y * -1 && Target.Y <= Range.Y;
 }
 
-FVector2D UTraceSubsystem::GetRealProjectRange() const
+FVector2D UTraceSubsystem::GetProjectCoordinateLimit() const
 {
 	if (TraceModule.ProjectFuncPtr)
 	{
-		return {TraceModule.ProjectFuncPtr->Width * ProjectViewportScale, TraceModule.ProjectFuncPtr->Height * ProjectViewportScale};
+		return {TraceModule.ProjectFuncPtr->Width / 2, TraceModule.ProjectFuncPtr->Height / 2};
 	}
 	return FVector2D(0, 0);
 }
@@ -223,21 +223,28 @@ FVector2D UTraceSubsystem::GetRealProjectRange() const
 FVector2D UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D Range)
 {
 	FVector2D Result{-9999, -9999};
+	float ArcoDegrees;
 	bool bIsExistViewport = false;
 	bool bIsRange = false;
-	if (bIsExistViewport = UGameplayStatics::ProjectWorldToScreen(PlayerController, WorldLocation, Result, false), bIsExistViewport)
+	if (bIsExistViewport = CheckWorldLocationIsExistViewport(WorldLocation, TraceModule.ViewportCamera.Get()->GetComponentLocation(),
+	                                                         TraceModule.ViewportCamera->FieldOfView,
+	                                                         TraceModule.ViewportCamera->GetForwardVector(), ArcoDegrees), bIsExistViewport)
 	{
-		Result.X = Result.X - UWidgetLayoutLibrary::GetViewportSize(GetWorld()).X / 2;
+		UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PlayerController, WorldLocation, Result, false);
+
+		Result.X = Result.X - UWidgetLayoutLibrary::GetViewportSize(GetWorld()).X / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) / 2;
 		// 这里是为了适配用视图矩阵实现的坐标，有统一的通道
-		Result.Y = (Result.Y - UWidgetLayoutLibrary::GetViewportSize(GetWorld()).Y / 2) * -1;
+		Result.Y = (Result.Y - UWidgetLayoutLibrary::GetViewportSize(GetWorld()).Y / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) / 2) * -1;
 
 		bIsRange = CheckCoordinateIsExistRange(Result, Range);
 	}
-	if (bIsRange)
-	{
-		return Result;
-	}
+	// if (bIsRange)
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("IsRange::X==%f,Y==%f"), Result.X, Result.Y);
+	// 	return Result;
+	// }
 
+	// TODO: 视图矩阵有问题
 	FMatrix ViewMatrix;
 	FMatrix ProjectionMatrix;
 	FMatrix ViewProjectionMatrix;
@@ -245,13 +252,13 @@ FVector2D UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerControlle
 	                                          ViewProjectionMatrix);
 
 	Result = FVector2D(ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1)).X, ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1)).Y);
-	UE_LOG(LogTemp, Warning, TEXT("X==%f,Y==%f"), Result.X, Result.Y);
+	UE_LOG(LogTemp, Warning, TEXT("NotRange::X==%f,Y==%f"), Result.X, Result.Y);
 	return Result;
 }
 
 FVector2D UTraceSubsystem::TestGetScreenPosition(APlayerController* PlayerController, FVector WorldLocation)
 {
-	const FVector2D RealXY = GetProjectToScreen(PlayerController, WorldLocation, GetRealProjectRange());
+	const FVector2D RealXY = GetProjectToScreen(PlayerController, WorldLocation, GetProjectCoordinateLimit());
 
 	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) *
 		ProjectViewportScale;

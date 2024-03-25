@@ -108,7 +108,7 @@ public:
 	virtual void Update(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) =0;
 
 	BaseProjectFunctionType(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f): Width(NewWidth), Height(NewHeight),
-	                                                                                                            NotValidNumber(NewNotValidNumber)
+		NotValidNumber(NewNotValidNumber)
 	{
 	};
 
@@ -191,7 +191,7 @@ public:
 			return Result;
 		}
 
-		if (FMath::Clamp(x, XRange.first, XRange.second) && FMath::Clamp(y, YRange.first, YRange.second))
+		if (x >= XRange.first && x <= XRange.second && y >= YRange.first && y <= YRange.second)
 		{
 			Result.XYs.push_back({x, y});
 			Result.NearestXY = {x, y};

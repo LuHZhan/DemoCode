@@ -51,8 +51,12 @@ public:
 	void MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
 	void ToggleViewport(bool NewAnchoring);
 
+	/**
+	 * 获取投影二维坐标系下XY坐标的最大值
+	 * @return XY坐标的最大值
+	 */
 	UFUNCTION(BlueprintCallable)
-	FVector2D GetRealProjectRange() const;
+	FVector2D GetProjectCoordinateLimit() const;
 
 
 	/* Function */
@@ -110,7 +114,7 @@ public:
 
 	// TODO: Widget不够流畅，可以通过再限定视角的大小去实现流程的切换
 	UPROPERTY(EditAnywhere, Category="TraceSubsystemData")
-	float ProjectViewportScale = 0.9f;
+	float ProjectViewportScale = 0.8f;
 
 	UPROPERTY(BlueprintReadOnly, Category="TraceSubsystemData")
 	bool bIsTracing = false;
