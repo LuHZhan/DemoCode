@@ -81,10 +81,16 @@ public:
 	                                       float& ArcoDegrees) const;
 
 	UFUNCTION(BlueprintCallable)
-	bool CheckCoordinateIsExistRange(FVector2D Target, FVector2D Range, bool bIsQequal = false);
+	bool CheckCoordinateIsExistRange(FVector2D Target, FVector2D Range, bool bIsEqual = false);
 
 	UFUNCTION(BlueprintCallable)
-	FVector2D GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D Range);
+	FVector2D ClampCoordinate(FVector2D Target, FVector2D Range) const;
+
+	UFUNCTION(BlueprintCallable)
+	FVector2D GetClosestLimitCoordinate(FVector2D Target, FVector2D Range) const;
+	
+	UFUNCTION(BlueprintCallable)
+	void GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D Range, bool& bIsRequireCross, FVector2D& Result);
 
 	UFUNCTION(BlueprintCallable)
 	FVector2D TestGetScreenPosition(APlayerController* PlayerController, FVector WorldLocation);

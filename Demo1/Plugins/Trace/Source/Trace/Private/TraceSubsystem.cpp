@@ -158,18 +158,27 @@ void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>
 	const FVector ObjectLocation = It.Value.Get()->GetActorLocation();
 	const TWeakObjectPtr<UUserWidget>* UIPrt = TraceUIWidgetMap.Find(It.Value);
 
+	// 初始化ProjectFunc的边界数据
 	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) *
 		ProjectViewportScale;
 	TraceModule.ProjectFuncPtr->Update(ViewportSize.X, ViewportSize.Y);
-
 	const FVector2D Range = GetProjectCoordinateLimit();
-	const FVector2D RealXY = GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()),
-	                                            ObjectLocation,
-	                                            Range
+
+	// 执行投影，得到初始的YX坐标
+	FVector2D RealXY(0, 0);
+	bool bIsRequireCross = false;
+	GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()),
+	                   ObjectLocation,
+	                   Range, bIsRequireCross, RealXY
 	);
 
-	PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y);
+	PointInfo XYInfo = bIsRequireCross
+		                   ? TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y)
+		                   : PointInfo(true,
+		                               TArray<TPair<float, float>>({{RealXY.X, RealXY.Y}}),
+		                               FVector2D(RealXY.X, RealXY.Y));
 
+	// UE_LOG(LogTemp, Warning, TEXT("XYInfo.NearestXY.first==%f,XYInfo.NearestXY.second==%f"), XYInfo.NearestXY.first, XYInfo.NearestXY.second);
 	ViewportWidgetWeakPtr->AddOrUpdateUI(It.Key, *UIPrt, {XYInfo.NearestXY.first, XYInfo.NearestXY.second});
 }
 
@@ -202,13 +211,32 @@ bool UTraceSubsystem::CheckWorldLocationIsExistViewport(FVector ObjectLocation, 
 	return TargetCosValue > PawnFOVCosValue;
 }
 
-bool UTraceSubsystem::CheckCoordinateIsExistRange(FVector2D Target, FVector2D Range, bool bIsQequal /*= false*/)
+bool UTraceSubsystem::CheckCoordinateIsExistRange(FVector2D Target, FVector2D Range, bool bIsEqual /*= false*/)
 {
-	if (bIsQequal)
+	if (bIsEqual)
 	{
 		return Target.X >= Range.X * -1 && Target.X <= Range.X && Target.Y >= Range.Y * -1 && Target.Y <= Range.Y;
 	}
 	return Target.X >= Range.X * -1 && Target.X <= Range.X && Target.Y >= Range.Y * -1 && Target.Y <= Range.Y;
+}
+
+FVector2D UTraceSubsystem::ClampCoordinate(FVector2D Target, FVector2D Range) const
+{
+	FVector2D Result = {FMath::Clamp(Target.X, Range.X * -1, Range.X), FMath::Clamp(Target.Y, Range.Y * -1, Range.Y)};
+	return Result;
+}
+
+FVector2D UTraceSubsystem::GetClosestLimitCoordinate(FVector2D Target, FVector2D Range) const
+{
+	FVector2d Limit;
+	Limit.X = FMath::Abs(Target.X - Range.X) <= FMath::Abs(Target.X - (Range.X * -1)) ? Range.X : Range.X * -1;
+	Limit.Y = FMath::Abs(Target.Y - Range.Y) <= FMath::Abs(Target.Y - (Range.Y * -1)) ? Range.Y : Range.Y * -1;
+
+	FVector2D Percent;
+	Percent.X = Target.X / Limit.X;
+	Percent.Y = Target.Y / Limit.Y;
+
+	return Percent.X >= Percent.Y ? FVector2D({Limit.X, Target.Y}) : FVector2D({Target.X, Limit.Y});
 }
 
 FVector2D UTraceSubsystem::GetProjectCoordinateLimit() const
@@ -220,45 +248,48 @@ FVector2D UTraceSubsystem::GetProjectCoordinateLimit() const
 	return FVector2D(0, 0);
 }
 
-FVector2D UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D Range)
+void UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D Range, bool& bIsRequireCross,
+                                         FVector2D& Result)
 {
-	FVector2D Result{-9999, -9999};
 	float ArcoDegrees;
-	bool bIsExistViewport = false;
-	bool bIsRange = false;
-	if (bIsExistViewport = CheckWorldLocationIsExistViewport(WorldLocation, TraceModule.ViewportCamera.Get()->GetComponentLocation(),
-	                                                         TraceModule.ViewportCamera->FieldOfView,
-	                                                         TraceModule.ViewportCamera->GetForwardVector(), ArcoDegrees), bIsExistViewport)
+	if (CheckWorldLocationIsExistViewport(WorldLocation, TraceModule.ViewportCamera.Get()->GetComponentLocation(),
+	                                      TraceModule.ViewportCamera->FieldOfView,
+	                                      TraceModule.ViewportCamera->GetForwardVector(), ArcoDegrees))
 	{
+		// TODO: 全程使用ProjectWorldLocationToWidgetPosition不可行，处于身后的物体不能够正确的显示位置
 		UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PlayerController, WorldLocation, Result, false);
 
 		Result.X = Result.X - UWidgetLayoutLibrary::GetViewportSize(GetWorld()).X / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) / 2;
 		// 这里是为了适配用视图矩阵实现的坐标，有统一的通道
 		Result.Y = (Result.Y - UWidgetLayoutLibrary::GetViewportSize(GetWorld()).Y / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) / 2) * -1;
 
-		bIsRange = CheckCoordinateIsExistRange(Result, Range);
+		Result = CheckCoordinateIsExistRange(Result, Range) ? Result : ClampCoordinate(Result, Range);
+		bIsRequireCross = false;
+		return;
 	}
-	// if (bIsRange)
-	// {
-	// 	UE_LOG(LogTemp, Warning, TEXT("IsRange::X==%f,Y==%f"), Result.X, Result.Y);
-	// 	return Result;
-	// }
 
-	// TODO: 视图矩阵有问题
+	// TODO: 对于视野外视图矩阵不完全对，会出现值过小的问题，同时会出现y值跟Project不符
 	FMatrix ViewMatrix;
 	FMatrix ProjectionMatrix;
 	FMatrix ViewProjectionMatrix;
 	UGameplayStatics::GetViewProjectionMatrix(PlayerController->PlayerCameraManager->GetCameraCacheView(), ViewMatrix, ProjectionMatrix,
 	                                          ViewProjectionMatrix);
 
-	Result = FVector2D(ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1)).X, ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1)).Y);
-	UE_LOG(LogTemp, Warning, TEXT("NotRange::X==%f,Y==%f"), Result.X, Result.Y);
-	return Result;
+	const FVector4 TransformVec = ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1));
+	Result = FVector2D(TransformVec.X, TransformVec.Y);
+
+	// Result = GetClosestLimitCoordinate(Result, Range);
+	// UE_LOG(LogTemp, Warning, TEXT("NotRange::X==%f,Y==%f,Z==%f"), MatrixVector4.X, MatrixVector4.Y, MatrixVector4.Z);
+	UKismetSystemLibrary::PrintString(GetWorld(),
+	                                  FString::Printf(TEXT("NotRange::X==%f,Y==%f,Z==%f"), TransformVec.X, TransformVec.Y, TransformVec.Z));
+	bIsRequireCross = true;
 }
 
 FVector2D UTraceSubsystem::TestGetScreenPosition(APlayerController* PlayerController, FVector WorldLocation)
 {
-	const FVector2D RealXY = GetProjectToScreen(PlayerController, WorldLocation, GetProjectCoordinateLimit());
+	bool a;
+	FVector2D RealXY;
+	GetProjectToScreen(PlayerController, WorldLocation, GetProjectCoordinateLimit(), a, RealXY);
 
 	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) *
 		ProjectViewportScale;

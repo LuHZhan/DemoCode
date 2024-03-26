@@ -58,6 +58,20 @@ struct PointInfo
 	PointInfo(): IsValid(false), XYs({}), NearestXY({})
 	{
 	};
+
+	PointInfo(bool NewIsValid, const XYArray& NewXYs, const std::pair<float, float>& NewNearestXY): IsValid(NewIsValid), XYs(NewXYs), NearestXY(NewNearestXY)
+	{
+	};
+
+	PointInfo(bool NewIsValid, const TArray<TPair<float, float>>& NewXYs, const FVector2D& NewNearestXY): IsValid(NewIsValid),
+		NearestXY(NewNearestXY.X, NewNearestXY.Y)
+	{
+		for (const TPair<float, float>& XY : NewXYs)
+		{
+			XYs.push_back({XY.Key, XY.Value});
+		}
+	};
+
 	bool IsValid;
 	XYArray XYs;
 	std::pair<float, float> NearestXY;
@@ -191,13 +205,13 @@ public:
 			return Result;
 		}
 
-		if (x >= XRange.first && x <= XRange.second && y >= YRange.first && y <= YRange.second)
-		{
-			Result.XYs.push_back({x, y});
-			Result.NearestXY = {x, y};
-			Result.IsValid = true;
-			return Result;
-		}
+		// if (x >= XRange.first && x <= XRange.second && y >= YRange.first && y <= YRange.second)
+		// {
+		// 	Result.XYs.push_back({x, y});
+		// 	Result.NearestXY = {x, y};
+		// 	Result.IsValid = true;
+		// 	return Result;
+		// }
 
 		const Quadrant Position = GetQuadrant(x, y);
 		const float XMax = QuadrantMap.find(Position)->second.first;
