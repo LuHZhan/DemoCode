@@ -7,6 +7,7 @@
 #include "map"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Actor.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "TraceDefinition.generated.h"
 
 UCLASS()
@@ -119,7 +120,7 @@ public:
 		return (x1 * y2) - (x2 * y1) > 0 ? Direction::Right : Direction::Left;
 	}
 
-	virtual void Update(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) =0;
+	virtual void UpdateRange(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) =0;
 
 	BaseProjectFunctionType(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f): Width(NewWidth), Height(NewHeight),
 		NotValidNumber(NewNotValidNumber)
@@ -163,7 +164,7 @@ public:
 		};
 	};
 
-	virtual void Update(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) override
+	virtual void UpdateRange(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) override
 	{
 		Width = NewWidth;
 		Height = NewHeight;
@@ -195,9 +196,10 @@ public:
 		}
 		return Ys;
 	}
-
+	
 	virtual PointInfo GetCrossLocation(float x, float y) const override
 	{
+
 		PointInfo Result;
 		if (x == 0 || y == 0)
 		{
@@ -205,13 +207,13 @@ public:
 			return Result;
 		}
 
-		// if (x >= XRange.first && x <= XRange.second && y >= YRange.first && y <= YRange.second)
-		// {
-		// 	Result.XYs.push_back({x, y});
-		// 	Result.NearestXY = {x, y};
-		// 	Result.IsValid = true;
-		// 	return Result;
-		// }
+		if (x >= XRange.first && x <= XRange.second && y >= YRange.first && y <= YRange.second)
+		{
+			Result.XYs.push_back({x, y});
+			Result.NearestXY = {x, y};
+			Result.IsValid = true;
+			return Result;
+		}
 
 		const Quadrant Position = GetQuadrant(x, y);
 		const float XMax = QuadrantMap.find(Position)->second.first;
@@ -241,13 +243,6 @@ public:
 			}
 		}
 		return Result;
-		// float ValueMinX = YRange.first / a;
-		// float ValueMaxX = YRange.second / a;
-		// Result.XYs.push_back({ValueMinX, YRange.first});
-		// Result.XYs.push_back({ValueMaxX, YRange.second});
-		// Result.NearestXY.first = y > 0 ? ValueMaxX : ValueMinX;
-		// Result.NearestXY.second = YRange.second;
-		// Result.IsValid = true;
 	}
 
 	std::pair<float, float> XRange;
@@ -255,6 +250,39 @@ public:
 	std::map<Quadrant, std::pair<float, float>> QuadrantMap;
 	std::map<std::pair<Quadrant, Direction>, Axis> UnKnownAxisMap;
 };
+
+// PointInfo Result;
+// if (x == 0 || y == 0)
+// {
+// 	Result.IsValid = false;
+// 	return Result;
+// }
+//
+// if (x >= XRange.first && x <= XRange.second && y >= YRange.first && y <= YRange.second)
+// {
+// 	Result.XYs.push_back({x, y});
+// 	Result.NearestXY = {x, y};
+// 	Result.IsValid = true;
+// 	return Result;
+// }
+//
+// std::pair<float, float> Limit;
+// Limit.first = abs(x - XRange.second) <= abs(x - (XRange.first)) ? XRange.second : XRange.first;
+// Limit.second = abs(y - YRange.second) <= abs(y - (YRange.first)) ? YRange.second : YRange.first;
+//
+// std::pair<float, float> Percent;
+// Percent.first = x / Limit.first;
+// Percent.second = y / Limit.second;
+//
+// const float A = (y / x);
+// // 直接使用Target.XorY，如果Target的值超过了Range的范围，则会得到矩阵顶点的坐标，结果是不对的，所以使用A去计算，得到在矩阵边相交点
+// const std::pair<float, float> ResultVector2D = Percent.first >= Percent.second
+// 	                                         ? std::pair<float, float>({Limit.first, Limit.first * A})
+// 	                                         : std::pair<float, float>({Limit.second / A, Limit.second});
+// Result.XYs.push_back(ResultVector2D);
+// Result.NearestXY = ResultVector2D;
+// Result.IsValid = true;
+// return Result;
 
 /* Function of project to viewport */
 

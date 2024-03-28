@@ -52,14 +52,14 @@ public:
 	void ToggleViewport(bool NewAnchoring);
 
 	/**
-	 * 获取投影二维坐标系下XY坐标的最大值
+	 * 获取边界函数XY坐标的最大值
 	 * @return XY坐标的最大值
 	 */
 	UFUNCTION(BlueprintCallable)
 	FVector2D GetProjectCoordinateLimit() const;
 
 
-	/* Function */
+	/* -------------------- Function -------------------- */
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="TraceCore|Function")
 	bool CharacterIsMoveOrRotate() const
@@ -89,13 +89,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FVector2D GetClosestLimitCoordinate(FVector2D Target, FVector2D Range) const;
 	
+	/**
+	 * 获取WorldSpace转到CameraSpace的坐标
+	 * @param PlayerController 和Camera对应的Controller
+	 * @param WorldLocation Actor的世界坐标
+	 * @param Result 映射到屏幕上的二维坐标
+	 */
 	UFUNCTION(BlueprintCallable)
-	void GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D Range, bool& bIsRequireCross, FVector2D& Result);
+	void GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D& Result);
+	
 
-	UFUNCTION(BlueprintCallable)
-	FVector2D TestGetScreenPosition(APlayerController* PlayerController, FVector WorldLocation);
-
-	/* Function */
+	/* -------------------- Function -------------------- */
 
 
 	virtual void Tick(float DeltaTime) override;

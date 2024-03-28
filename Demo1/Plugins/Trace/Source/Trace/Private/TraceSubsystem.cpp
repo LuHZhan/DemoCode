@@ -7,6 +7,7 @@
 #include "EngineUtils.h"
 #include "Blueprint/GameViewportSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
 UTraceSubsystem::UTraceSubsystem()
 {
@@ -17,8 +18,11 @@ void UTraceSubsystem::TraceSetting(FTraceSettingInfo NewTraceModule, FString Pro
 	TraceModule = NewTraceModule;
 	if (ProjectFunctionName == "VerticalRectangle")
 	{
-		const FVector2D Size = UWidgetLayoutLibrary::GetViewportSize(GetWorld());
-		TraceModule.ProjectFuncPtr = MakeShareable(new VerticalRectanglePF(Size.X, Size.Y, 10000.0f));
+		// TODO: 这里的ViewportSize在LevelBlueprint不能够正常运行
+		const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) *
+			ProjectViewportScale;
+		TraceModule.ProjectFuncPtr = MakeShareable(new VerticalRectanglePF(ViewportSize.X, ViewportSize.Y, 10000.0f));
+		TraceModule.ProjectFuncPtr->UpdateRange(ViewportSize.X, ViewportSize.Y);
 	}
 	bIsNeedfulSetting = true;
 }
@@ -60,58 +64,12 @@ void UTraceSubsystem::Update(float DeltaTime)
 	{
 		for (TTuple<FString, TWeakObjectPtr<AActor>> It : TraceObjectMap)
 		{
-			const FVector ObjectLocation = It.Value.Get()->GetActorLocation();
-			const FVector CameraLocation = TraceModule.ViewportCamera.Get()->GetComponentLocation();
-			const float FOVSize = TraceModule.ViewportCamera.Get()->FieldOfView;
-
-			float ArcoDegrees;
-			// TODO:完整的实现应该不需要检测
-			if (CheckWorldLocationIsExistViewport(ObjectLocation, CameraLocation, FOVSize * 0.7, TraceModule.ViewportCamera.Get()->GetForwardVector(),
-			                                      ArcoDegrees))
+			ToggleViewport(true);
+			if (!TraceUIWidgetMap.Contains(It.Value))
 			{
-				// ToggleViewport(false);
-				// if (GetWorld())
-				// {
-				// 	const TWeakObjectPtr<ASceneUIActor>* UIActor = FindOrCreateUIActor(It, ObjectLocation);
-				// 	// TODO: 应该将当前是否显示在屏幕内作为一个变量去进行动态判断，发生变化再进行切换
-				// 	// UIActor->Get()->SetVisible(true, true);
-				//
-				// 	ToggleViewport(true);
-				// 	// if (TraceUIActorMap.Contains(It.Value))
-				// 	// {
-				// 	// 	TraceUIActorMap.Find(It.Value)->Get()->SetVisible(false, false);
-				// 	// }
-				// 	if (!TraceUIWidgetMap.Contains(It.Value))
-				// 	{
-				// 		CreateUIToViewport(It);
-				// 	}
-				// 	MoveUIWidget(It);
-				// }
-
-				ToggleViewport(true);
-				if (TraceUIActorMap.Contains(It.Value))
-				{
-					TraceUIActorMap.Find(It.Value)->Get()->SetVisible(false, false);
-				}
-				if (!TraceUIWidgetMap.Contains(It.Value))
-				{
-					CreateUIToViewport(It);
-				}
-				MoveUIWidget(It);
+				CreateUIToViewport(It);
 			}
-			else
-			{
-				ToggleViewport(true);
-				if (TraceUIActorMap.Contains(It.Value))
-				{
-					TraceUIActorMap.Find(It.Value)->Get()->SetVisible(false, false);
-				}
-				if (!TraceUIWidgetMap.Contains(It.Value))
-				{
-					CreateUIToViewport(It);
-				}
-				MoveUIWidget(It);
-			}
+			MoveUIWidget(It);
 		}
 	}
 }
@@ -158,27 +116,23 @@ void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>
 	const FVector ObjectLocation = It.Value.Get()->GetActorLocation();
 	const TWeakObjectPtr<UUserWidget>* UIPrt = TraceUIWidgetMap.Find(It.Value);
 
-	// 初始化ProjectFunc的边界数据
-	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) *
-		ProjectViewportScale;
-	TraceModule.ProjectFuncPtr->Update(ViewportSize.X, ViewportSize.Y);
+	// 获取边界函数的坐标的限制范围
 	const FVector2D Range = GetProjectCoordinateLimit();
 
 	// 执行投影，得到初始的YX坐标
 	FVector2D RealXY(0, 0);
 	bool bIsRequireCross = false;
-	GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()),
-	                   ObjectLocation,
-	                   Range, bIsRequireCross, RealXY
+	GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()), ObjectLocation, RealXY
 	);
 
-	PointInfo XYInfo = bIsRequireCross
-		                   ? TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y)
-		                   : PointInfo(true,
-		                               TArray<TPair<float, float>>({{RealXY.X, RealXY.Y}}),
-		                               FVector2D(RealXY.X, RealXY.Y));
+	// 得到跟边界函数的交点
+	PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y);
 
-	// UE_LOG(LogTemp, Warning, TEXT("XYInfo.NearestXY.first==%f,XYInfo.NearestXY.second==%f"), XYInfo.NearestXY.first, XYInfo.NearestXY.second);
+	// Output
+	// UKismetSystemLibrary::PrintString(GetWorld(),
+	//                                   FString::Printf(TEXT("GetCrossLocation::X==%f,Y==%f"), XYInfo.NearestXY.first, XYInfo.NearestXY.second));
+
+	// 将值交给ViewportWidget
 	ViewportWidgetWeakPtr->AddOrUpdateUI(It.Key, *UIPrt, {XYInfo.NearestXY.first, XYInfo.NearestXY.second});
 }
 
@@ -228,15 +182,27 @@ FVector2D UTraceSubsystem::ClampCoordinate(FVector2D Target, FVector2D Range) co
 
 FVector2D UTraceSubsystem::GetClosestLimitCoordinate(FVector2D Target, FVector2D Range) const
 {
+	if (Target.X == 0 && Target.Y == 0)
+		return FVector2D{0, 0};
+
+	if (UKismetMathLibrary::InRange_FloatFloat(Target.X, Range.X * -1, Range.X) &&
+		UKismetMathLibrary::InRange_FloatFloat(Target.Y, Range.Y * -1, Range.Y))
+		return Target;
+
+	// 求象限坐标
 	FVector2d Limit;
 	Limit.X = FMath::Abs(Target.X - Range.X) <= FMath::Abs(Target.X - (Range.X * -1)) ? Range.X : Range.X * -1;
 	Limit.Y = FMath::Abs(Target.Y - Range.Y) <= FMath::Abs(Target.Y - (Range.Y * -1)) ? Range.Y : Range.Y * -1;
 
+
+	// 求函数射线无限延申的情况下，会先于哪条边相交
 	FVector2D Percent;
 	Percent.X = Target.X / Limit.X;
 	Percent.Y = Target.Y / Limit.Y;
 
-	return Percent.X >= Percent.Y ? FVector2D({Limit.X, Target.Y}) : FVector2D({Target.X, Limit.Y});
+	const float A = (Target.Y / Target.X);
+	// 直接使用Target.XorY，如果Target的值超过了Range的范围，则会得到矩阵顶点的坐标，结果是不对的，所以使用A去计算，得到在矩阵边相交点
+	return Percent.X >= Percent.Y ? FVector2D({Limit.X, Limit.X * A}) : FVector2D({Limit.Y / A, Limit.Y});
 }
 
 FVector2D UTraceSubsystem::GetProjectCoordinateLimit() const
@@ -248,55 +214,29 @@ FVector2D UTraceSubsystem::GetProjectCoordinateLimit() const
 	return FVector2D(0, 0);
 }
 
-void UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D Range, bool& bIsRequireCross,
+void UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation,
                                          FVector2D& Result)
 {
-	float ArcoDegrees;
-	if (CheckWorldLocationIsExistViewport(WorldLocation, TraceModule.ViewportCamera.Get()->GetComponentLocation(),
-	                                      TraceModule.ViewportCamera->FieldOfView,
-	                                      TraceModule.ViewportCamera->GetForwardVector(), ArcoDegrees))
-	{
-		// TODO: 全程使用ProjectWorldLocationToWidgetPosition不可行，处于身后的物体不能够正确的显示位置
-		UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PlayerController, WorldLocation, Result, false);
-
-		Result.X = Result.X - UWidgetLayoutLibrary::GetViewportSize(GetWorld()).X / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) / 2;
-		// 这里是为了适配用视图矩阵实现的坐标，有统一的通道
-		Result.Y = (Result.Y - UWidgetLayoutLibrary::GetViewportSize(GetWorld()).Y / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) / 2) * -1;
-
-		Result = CheckCoordinateIsExistRange(Result, Range) ? Result : ClampCoordinate(Result, Range);
-		bIsRequireCross = false;
-		return;
-	}
-
-	// TODO: 对于视野外视图矩阵不完全对，会出现值过小的问题，同时会出现y值跟Project不符
 	FMatrix ViewMatrix;
 	FMatrix ProjectionMatrix;
 	FMatrix ViewProjectionMatrix;
 	UGameplayStatics::GetViewProjectionMatrix(PlayerController->PlayerCameraManager->GetCameraCacheView(), ViewMatrix, ProjectionMatrix,
 	                                          ViewProjectionMatrix);
 
-	const FVector4 TransformVec = ViewMatrix.TransformFVector4(FVector4(WorldLocation, 1));
-	Result = FVector2D(TransformVec.X, TransformVec.Y);
+	// 获取MVP矩阵之后屏幕内[-1,1]之间的比例
+	const FVector4 TransformVec = ViewProjectionMatrix.TransformFVector4(FVector4(WorldLocation, 1));
+	const float AbsW = UKismetMathLibrary::Abs(TransformVec.W);
+	const FVector4 PerDivided = TransformVec / AbsW;
 
-	// Result = GetClosestLimitCoordinate(Result, Range);
-	// UE_LOG(LogTemp, Warning, TEXT("NotRange::X==%f,Y==%f,Z==%f"), MatrixVector4.X, MatrixVector4.Y, MatrixVector4.Z);
-	UKismetSystemLibrary::PrintString(GetWorld(),
-	                                  FString::Printf(TEXT("NotRange::X==%f,Y==%f,Z==%f"), TransformVec.X, TransformVec.Y, TransformVec.Z));
-	bIsRequireCross = true;
-}
+	// Output 
+	// UKismetSystemLibrary::PrintString(GetWorld(),
+	//                                   FString::Printf(TEXT("PerDivided::X==%f,Y==%f,Z==%f"), TransformVec.X / AbsW, TransformVec.Y / AbsW,
+	//                                                   TransformVec.Z / TransformVec.W));
 
-FVector2D UTraceSubsystem::TestGetScreenPosition(APlayerController* PlayerController, FVector WorldLocation)
-{
-	bool a;
-	FVector2D RealXY;
-	GetProjectToScreen(PlayerController, WorldLocation, GetProjectCoordinateLimit(), a, RealXY);
-
-	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) *
-		ProjectViewportScale;
-	TraceModule.ProjectFuncPtr->Update(ViewportSize.X, ViewportSize.Y);
-	const PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y);
-
-	return FVector2D(XYInfo.NearestXY.first, XYInfo.NearestXY.second);
+	// 将比例转化为具体的数值并返回
+	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) / 2;
+	Result.X = PerDivided.X * ViewportSize.X;
+	Result.Y = PerDivided.Y * ViewportSize.Y;
 }
 
 void UTraceSubsystem::Tick(float DeltaTime)
