@@ -8,23 +8,25 @@ void UTraceUIViewport::Toggle(bool bIsOpen)
 	bIsStartAnchoring = bIsOpen;
 	for (const TTuple<FString, FPlaneMoveData> Element : UIData)
 	{
-		if (Element.Value.UI->IsVisible() != bIsOpen)
+		if (Element.Value.NormalUI->IsVisible() != bIsOpen)
 		{
-			Element.Value.UI->SetVisibility(bIsOpen ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+			Element.Value.NormalUI->SetVisibility(bIsOpen ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		}
 	}
 }
 
-void UTraceUIViewport::AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWidget> UI, const FVector2D& XY)
+void UTraceUIViewport::AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWidget> NormalUI, TWeakObjectPtr<UUserWidget> LimitUI,
+                                     EUIStyleType CurStyleType, const FVector4& Data)
 {
 	if (UIData.Contains(Name))
 	{
-		UIData[Name].UI = UI;
-		UIData[Name].XY = XY;
+		// TODO: 在Update的时候,数据也需要更新
+		UIData[Name].NormalUI = NormalUI;
+		UIData[Name].Data = Data;
 	}
 	else
 	{
-		UIData.Add(Name, FPlaneMoveData(UI, XY));
+		UIData.Add(Name, FPlaneMoveData(NormalUI, LimitUI, Data, CurStyleType));
 		UpdateCanvas();
 	}
 	// UpdateCanvas();

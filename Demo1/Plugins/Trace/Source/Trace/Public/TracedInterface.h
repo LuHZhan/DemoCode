@@ -29,6 +29,9 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category="Data")
 	TSubclassOf<UUserWidget> GetCustomUIStyle();
 
+	UFUNCTION(BlueprintNativeEvent, Category="Data")
+	TSubclassOf<UUserWidget> GetLimitUIStyle();
+	
 	UFUNCTION(BlueprintNativeEvent, Category="Event")
 	void DispatchOpenTrace();
 

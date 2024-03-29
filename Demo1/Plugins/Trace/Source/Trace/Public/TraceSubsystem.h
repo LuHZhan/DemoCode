@@ -25,7 +25,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnObjectTraceCompleted, const FStri
 /**
  * 
  */
-UCLASS(Blueprintable)
+UCLASS(Blueprintable,BlueprintType)
 class TRACE_API UTraceSubsystem : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
@@ -47,7 +47,7 @@ public:
 
 
 	TWeakObjectPtr<ASceneUIActor>* FindOrCreateUIActor(const TTuple<FString, TWeakObjectPtr<AActor>>& PairIt, const FVector& ObjectLocation);
-	void CreateUIToViewport(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
+	bool CreateUIToViewport(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
 	void MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>& It);
 	void ToggleViewport(bool NewAnchoring);
 
@@ -58,6 +58,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FVector2D GetProjectCoordinateLimit() const;
 
+	 UFUNCTION()
+	 void GetSelectedUIStyle(const FString TraceActorName, const FVector2D Parameter2D,
+	                         EUIStyleType& StyleType, FVector4& Data) const;
+
+	// UFUNCTION(BlueprintCallable,BlueprintNativeEvent)
+	// void a(FString TraceActorName, FVector2D Parameter2D);
 
 	/* -------------------- Function -------------------- */
 
@@ -88,7 +94,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FVector2D GetClosestLimitCoordinate(FVector2D Target, FVector2D Range) const;
-	
+
 	/**
 	 * 获取WorldSpace转到CameraSpace的坐标
 	 * @param PlayerController 和Camera对应的Controller
@@ -97,7 +103,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	void GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D& Result);
-	
+
 
 	/* -------------------- Function -------------------- */
 
@@ -122,7 +128,6 @@ public:
 	UPROPERTY()
 	FTraceSettingInfo TraceModule;
 
-	// TODO: Widget不够流畅，可以通过再限定视角的大小去实现流程的切换
 	UPROPERTY(EditAnywhere, Category="TraceSubsystemData")
 	float ProjectViewportScale = 0.8f;
 
@@ -139,5 +144,8 @@ private:
 
 	TMap<FString, TWeakObjectPtr<AActor>> TraceObjectMap;
 	TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<ASceneUIActor>> TraceUIActorMap;
-	TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<UUserWidget>> TraceUIWidgetMap;
+	/**
+	 * 存储追踪的Actor对应的常驻UI和边界UI，0-NormalWidget，1-LimitWidget
+	 */
+	TMap<TWeakObjectPtr<AActor>, TArray<TWeakObjectPtr<UUserWidget>>> TraceUIWidgetMap;
 };

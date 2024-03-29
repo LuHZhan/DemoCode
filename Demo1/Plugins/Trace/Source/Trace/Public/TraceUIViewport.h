@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 
-// #include "TraceDefinition.h"
+#include "TraceDefinition.h"
 
 #include "TraceUIViewport.generated.h"
 
@@ -18,19 +18,40 @@ struct FPlaneMoveData
 {
 	GENERATED_BODY()
 
-	FPlaneMoveData(): UI(nullptr), XY(0.0)
+	FPlaneMoveData(): NormalUI(nullptr), LimitUI(nullptr), SelectedUI(nullptr), CurStyleType(EUIStyleType::Normal), Data(0.0)
 	{
 	};
 
-	FPlaneMoveData(const TWeakObjectPtr<UUserWidget>& UI, const FVector2D& XY) : UI(UI), XY(XY)
+	FPlaneMoveData(const TWeakObjectPtr<UUserWidget>& NewNormalUI, const TWeakObjectPtr<UUserWidget>& NewLimitUI, const FVector4& NewData,
+	               EUIStyleType NewStyle) : NormalUI(NewNormalUI),
+	                                        LimitUI(NewLimitUI),
+	                                        CurStyleType(NewStyle),
+	                                        Data(NewData)
 	{
+		if (CurStyleType == EUIStyleType::Normal)
+		{
+			SelectedUI = NormalUI;
+		}
+		else if (CurStyleType == EUIStyleType::Limit)
+		{
+			SelectedUI = LimitUI;
+		}
 	};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TWeakObjectPtr<UUserWidget> UI;
+	TWeakObjectPtr<UUserWidget> NormalUI;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector2D XY;
+	TWeakObjectPtr<UUserWidget> LimitUI;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TWeakObjectPtr<UUserWidget> SelectedUI;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EUIStyleType CurStyleType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector4 Data;
 };
 
 UCLASS(Blueprintable, BlueprintType)
@@ -41,7 +62,7 @@ class TRACE_API UTraceUIViewport : public UUserWidget
 public:
 	UFUNCTION(BlueprintCallable, Category="TraceUIViewport")
 	void Toggle(bool bIsOpen);
-	
+
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="TraceUIViewport")
 	void Anchoring();
 
@@ -49,7 +70,8 @@ public:
 	void UpdateCanvas();
 
 	UFUNCTION(Category="TraceUIViewport")
-	void AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWidget> UI, const FVector2D& XY);
+	void AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWidget> NormalUI, TWeakObjectPtr<UUserWidget> LimitUI, EUIStyleType CurStyleType,
+	                   const FVector4& Data);
 
 	UFUNCTION(BlueprintCallable, Category="TraceUIViewport")
 	void RemoveUI(const FString& Name);

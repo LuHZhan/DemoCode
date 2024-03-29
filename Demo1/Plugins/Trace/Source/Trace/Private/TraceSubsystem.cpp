@@ -99,13 +99,24 @@ TWeakObjectPtr<ASceneUIActor>* UTraceSubsystem::FindOrCreateUIActor(const TTuple
 	return TraceUIActorMap.Find(PairIt.Value);
 }
 
-void UTraceSubsystem::CreateUIToViewport(const TTuple<FString, TWeakObjectPtr<AActor>>& It)
+bool UTraceSubsystem::CreateUIToViewport(const TTuple<FString, TWeakObjectPtr<AActor>>& It)
 {
-	const TSubclassOf<UUserWidget> WidgetClass = ITracedInterface::Execute_GetCustomUIStyle(It.Value.Get());
-	if (UUserWidget* UIPtr = CreateWidget<UUserWidget>(GetWorld(), WidgetClass))
+	const TSubclassOf<UUserWidget> NormalWidgetClass = ITracedInterface::Execute_GetCustomUIStyle(It.Value.Get());
+	const TSubclassOf<UUserWidget> LimitWidgetClass = ITracedInterface::Execute_GetLimitUIStyle(It.Value.Get());
+	if (UUserWidget* NormalUIPtr = CreateWidget<UUserWidget>(GetWorld(), NormalWidgetClass); NormalUIPtr)
 	{
-		TraceUIWidgetMap.Add(It.Value.Get(), TWeakObjectPtr<UUserWidget>(UIPtr));
+		TraceUIWidgetMap.Add(It.Value.Get(), {});
+		TraceUIWidgetMap.Find(It.Value.Get())->Add(TWeakObjectPtr<UUserWidget>(NormalUIPtr));
+		if (UUserWidget* LimitUIPtr = CreateWidget<UUserWidget>(GetWorld(), LimitWidgetClass); LimitUIPtr)
+		{
+			TraceUIWidgetMap.Find(It.Value.Get())->Add(TWeakObjectPtr<UUserWidget>(LimitUIPtr));
+			return true;
+		}
+		// 两个UI都使用同一种
+		TraceUIWidgetMap.Find(It.Value.Get())->Add(TWeakObjectPtr<UUserWidget>(NormalUIPtr));
+		return true;
 	}
+	return false;
 }
 
 void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>& It)
@@ -114,7 +125,7 @@ void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>
 		return;
 
 	const FVector ObjectLocation = It.Value.Get()->GetActorLocation();
-	const TWeakObjectPtr<UUserWidget>* UIPrt = TraceUIWidgetMap.Find(It.Value);
+	// const TWeakObjectPtr<UUserWidget>* UIPrt = &(*(TraceUIWidgetMap.Find(It.Value)))[0];
 
 	// 获取边界函数的坐标的限制范围
 	const FVector2D Range = GetProjectCoordinateLimit();
@@ -132,8 +143,14 @@ void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>
 	// UKismetSystemLibrary::PrintString(GetWorld(),
 	//                                   FString::Printf(TEXT("GetCrossLocation::X==%f,Y==%f"), XYInfo.NearestXY.first, XYInfo.NearestXY.second));
 
+	EUIStyleType CurStyleType;
+	FVector4 Data(XYInfo.NearestXY.first, XYInfo.NearestXY.second, 0, 0);
+	GetSelectedUIStyle(It.Key, {XYInfo.NearestXY.first, XYInfo.NearestXY.second}, CurStyleType, Data);
+
 	// 将值交给ViewportWidget
-	ViewportWidgetWeakPtr->AddOrUpdateUI(It.Key, *UIPrt, {XYInfo.NearestXY.first, XYInfo.NearestXY.second});
+	ViewportWidgetWeakPtr->AddOrUpdateUI(It.Key, (*(TraceUIWidgetMap.Find(It.Value)))[0], (*(TraceUIWidgetMap.Find(It.Value)))[1],
+	                                     CurStyleType, Data);
+	// ViewportWidgetWeakPtr->AddOrUpdateUI(It.Key, *UIPrt, EUIStyleType::Normal, Data);
 }
 
 void UTraceSubsystem::ToggleViewport(bool NewAnchoring)
@@ -213,6 +230,26 @@ FVector2D UTraceSubsystem::GetProjectCoordinateLimit() const
 	}
 	return FVector2D(0, 0);
 }
+
+// void UTraceSubsystem::a_Implementation(FString TraceActorName, FVector2D Parameter2D)
+// {
+// 	
+// }
+
+void UTraceSubsystem::GetSelectedUIStyle(const FString TraceActorName, const FVector2D Parameter2D, EUIStyleType& StyleType, FVector4& Data) const
+{
+	if (const FVector2D Range = GetProjectCoordinateLimit(); Parameter2D.X == Range.X || Parameter2D.Y == Range.Y)
+	{
+		StyleType = EUIStyleType::Limit;
+		const float ClockWiseAngle = 360 - FMath::Acos((FVector(0, 100, 0).Dot(FVector(Data.X, Data.Y, 0)))
+			/ (100 * FVector(Data.X, Data.Y, 0).Length())) * 180 / UE_DOUBLE_PI;
+		Data.Z = ClockWiseAngle < 180 ? ClockWiseAngle : ClockWiseAngle - 360;
+		return;
+	}
+
+	StyleType = EUIStyleType::Normal;
+}
+
 
 void UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation,
                                          FVector2D& Result)

@@ -18,12 +18,19 @@ class TRACE_API ATraceDefinition : public AActor
 
 // TODO: 目前只实现了DisplayedUI，后续应该针对每一个TraceActor实现不同的Module
 UENUM(Blueprintable, BlueprintType)
-enum ETraceModule
+enum class ETraceModule:uint8
 {
 	DisplayedUI = 0,
 	DisplayedUIOffViewport,
 	NotDisplayedUI,
 	AutoTrace,
+};
+
+UENUM(Blueprintable, BlueprintType)
+enum class EUIStyleType:uint8
+{
+	Normal = 0,
+	Limit
 };
 
 /* Function of project to viewport */
@@ -196,10 +203,9 @@ public:
 		}
 		return Ys;
 	}
-	
+
 	virtual PointInfo GetCrossLocation(float x, float y) const override
 	{
-
 		PointInfo Result;
 		if (x == 0 || y == 0)
 		{
