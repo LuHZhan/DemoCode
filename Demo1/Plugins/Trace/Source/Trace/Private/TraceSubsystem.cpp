@@ -19,10 +19,9 @@ void UTraceSubsystem::TraceSetting(FTraceSettingInfo NewTraceModule, FString Pro
 	if (ProjectFunctionName == "VerticalRectangle")
 	{
 		// TODO: 这里的ViewportSize在LevelBlueprint不能够正常运行
-		const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) *
-			ProjectViewportScale;
+		const FVector2D ViewportSize = GetFullScreenSize() * ProjectViewportScale;
 		TraceModule.ProjectFuncPtr = MakeShareable(new VerticalRectanglePF(ViewportSize.X, ViewportSize.Y, 10000.0f));
-		TraceModule.ProjectFuncPtr->UpdateRange(ViewportSize.X, ViewportSize.Y);
+		UpdateLimitFuncRange(GetFullScreenSize() * ProjectViewportScale);
 	}
 	bIsNeedfulSetting = true;
 }
@@ -135,6 +134,9 @@ void UTraceSubsystem::MoveUIWidget(const TTuple<FString, TWeakObjectPtr<AActor>>
 	bool bIsRequireCross = false;
 	GetProjectToScreen(Cast<APlayerController>(TraceModule.ViewportCharacter->GetController()), ObjectLocation, RealXY
 	);
+
+	// 更新边界函数的范围
+	UpdateLimitFuncRange(GetFullScreenSize() * ProjectViewportScale);
 
 	// 得到跟边界函数的交点
 	PointInfo XYInfo = TraceModule.ProjectFuncPtr->GetCrossLocation(RealXY.X, RealXY.Y);
@@ -250,6 +252,17 @@ void UTraceSubsystem::GetSelectedUIStyle(const FString TraceActorName, const FVe
 	StyleType = EUIStyleType::Normal;
 }
 
+bool UTraceSubsystem::UpdateLimitFuncRange(FVector2D NewRange)
+{
+	bool bIsComplete = false;
+	if (TraceModule.ProjectFuncPtr)
+	{
+		TraceModule.ProjectFuncPtr->UpdateRange(NewRange.X, NewRange.Y);
+		bIsComplete = true;
+	}
+	return bIsComplete;
+}
+
 
 void UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation,
                                          FVector2D& Result)
@@ -271,9 +284,14 @@ void UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FV
 	//                                                   TransformVec.Z / TransformVec.W));
 
 	// 将比例转化为具体的数值并返回
-	const FVector2D ViewportSize = UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()) / 2;
+	const FVector2D ViewportSize = GetFullScreenSize() / 2;
 	Result.X = PerDivided.X * ViewportSize.X;
 	Result.Y = PerDivided.Y * ViewportSize.Y;
+}
+
+FVector2D UTraceSubsystem::GetFullScreenSize() const
+{
+	return FVector2D(UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()));
 }
 
 void UTraceSubsystem::Tick(float DeltaTime)

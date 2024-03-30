@@ -25,7 +25,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnObjectTraceCompleted, const FStri
 /**
  * 
  */
-UCLASS(Blueprintable,BlueprintType)
+UCLASS(Blueprintable, BlueprintType)
 class TRACE_API UTraceSubsystem : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
@@ -58,12 +58,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FVector2D GetProjectCoordinateLimit() const;
 
-	 UFUNCTION()
-	 void GetSelectedUIStyle(const FString TraceActorName, const FVector2D Parameter2D,
-	                         EUIStyleType& StyleType, FVector4& Data) const;
+	UFUNCTION()
+	void GetSelectedUIStyle(const FString TraceActorName, const FVector2D Parameter2D,
+	                        EUIStyleType& StyleType, FVector4& Data) const;
 
 	// UFUNCTION(BlueprintCallable,BlueprintNativeEvent)
 	// void a(FString TraceActorName, FVector2D Parameter2D);
+
+	UFUNCTION(BlueprintCallable)
+	bool UpdateLimitFuncRange(FVector2D NewRange);
 
 	/* -------------------- Function -------------------- */
 
@@ -104,6 +107,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void GetProjectToScreen(APlayerController* PlayerController, FVector WorldLocation, FVector2D& Result);
 
+	UFUNCTION(BlueprintCallable)
+	FVector2D GetFullScreenSize() const;
 
 	/* -------------------- Function -------------------- */
 
