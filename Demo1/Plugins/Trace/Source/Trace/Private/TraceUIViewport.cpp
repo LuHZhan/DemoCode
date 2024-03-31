@@ -3,6 +3,20 @@
 
 #include "TraceUIViewport.h"
 
+#include "Kismet/KismetSystemLibrary.h"
+
+void FPlaneMoveData::FlushSelectedUI()
+{
+	if (CurStyleType == EUIStyleType::Normal)
+	{
+		SelectedUI = NormalUI;
+	}
+	else if (CurStyleType == EUIStyleType::Limit)
+	{
+		SelectedUI = LimitUI;
+	}
+}
+
 void UTraceUIViewport::Toggle(bool bIsOpen)
 {
 	bIsStartAnchoring = bIsOpen;
@@ -22,24 +36,36 @@ void UTraceUIViewport::AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWi
 	{
 		// TODO: 在Update的时候,数据也需要更新
 		UIData[Name].NormalUI = NormalUI;
+		UIData[Name].LimitUI = LimitUI;
+		UIData[Name].CurStyleType = CurStyleType;
 		UIData[Name].Data = Data;
+		UIData[Name].FlushSelectedUI();
 	}
 	else
 	{
 		UIData.Add(Name, FPlaneMoveData(NormalUI, LimitUI, Data, CurStyleType));
-		UpdateCanvas();
+		LoadCanvas();
 	}
+	UKismetSystemLibrary::PrintString(GetWorld(), Data.ToString());
 	// UpdateCanvas();
 }
 
 void UTraceUIViewport::RemoveUI(const FString& Name)
 {
 	UIData.Remove(Name);
-	UpdateCanvas();
+	LoadCanvas();
 }
 
 void UTraceUIViewport::ClearAllUI()
 {
 	UIData.Empty();
-	UpdateCanvas();
+	LoadCanvas();
+}
+
+void UTraceUIViewport::FlushAllSelectedUI()
+{
+	for (TTuple<FString, FPlaneMoveData> Element : UIData)
+	{
+		Element.Value.FlushSelectedUI();
+	}
 }

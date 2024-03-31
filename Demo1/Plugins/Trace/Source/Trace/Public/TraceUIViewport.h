@@ -28,15 +28,10 @@ struct FPlaneMoveData
 	                                        CurStyleType(NewStyle),
 	                                        Data(NewData)
 	{
-		if (CurStyleType == EUIStyleType::Normal)
-		{
-			SelectedUI = NormalUI;
-		}
-		else if (CurStyleType == EUIStyleType::Limit)
-		{
-			SelectedUI = LimitUI;
-		}
+		FlushSelectedUI();
 	};
+	
+	void FlushSelectedUI();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TWeakObjectPtr<UUserWidget> NormalUI;
@@ -64,10 +59,10 @@ public:
 	void Toggle(bool bIsOpen);
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="TraceUIViewport")
-	void Anchoring();
+	void Moving();
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="TraceUIViewport")
-	void UpdateCanvas();
+	void LoadCanvas();
 
 	UFUNCTION(Category="TraceUIViewport")
 	void AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWidget> NormalUI, TWeakObjectPtr<UUserWidget> LimitUI, EUIStyleType CurStyleType,
@@ -78,6 +73,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="TraceUIViewport")
 	void ClearAllUI();
+
+	UFUNCTION(BlueprintCallable)
+	void FlushAllSelectedUI();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="TraceUIViewport")
 	TMap<FString, FPlaneMoveData> UIData;

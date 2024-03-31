@@ -228,7 +228,7 @@ FVector2D UTraceSubsystem::GetProjectCoordinateLimit() const
 {
 	if (TraceModule.ProjectFuncPtr)
 	{
-		return {TraceModule.ProjectFuncPtr->Width / 2, TraceModule.ProjectFuncPtr->Height / 2};
+		return {TraceModule.ProjectFuncPtr->GetRange().first, TraceModule.ProjectFuncPtr->GetRange().second};
 	}
 	return FVector2D(0, 0);
 }
@@ -240,7 +240,8 @@ FVector2D UTraceSubsystem::GetProjectCoordinateLimit() const
 
 void UTraceSubsystem::GetSelectedUIStyle(const FString TraceActorName, const FVector2D Parameter2D, EUIStyleType& StyleType, FVector4& Data) const
 {
-	if (const FVector2D Range = GetProjectCoordinateLimit(); Parameter2D.X == Range.X || Parameter2D.Y == Range.Y)
+	const FVector2D Range = GetProjectCoordinateLimit();
+	if (Parameter2D.X == Range.X || Parameter2D.X == Range.X * -1 || Parameter2D.Y == Range.Y || Parameter2D.Y == Range.Y * -1)
 	{
 		StyleType = EUIStyleType::Limit;
 		const float ClockWiseAngle = 360 - FMath::Acos((FVector(0, 100, 0).Dot(FVector(Data.X, Data.Y, 0)))
@@ -291,7 +292,9 @@ void UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FV
 
 FVector2D UTraceSubsystem::GetFullScreenSize() const
 {
-	return FVector2D(UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()));
+	const FVector2D Ret(UWidgetLayoutLibrary::GetViewportSize(GetWorld()) / UWidgetLayoutLibrary::GetViewportScale(GetWorld()));
+	// UKismetSystemLibrary::PrintString(GetWorld(), Ret.ToString());
+	return Ret;
 }
 
 void UTraceSubsystem::Tick(float DeltaTime)
@@ -317,8 +320,11 @@ bool UTraceSubsystem::TraceInit()
 		{
 			if ((*It)->GetClass()->ImplementsInterface(UTracedInterface::StaticClass()))
 			{
-				TraceObjectMap.FindOrAdd(ITracedInterface::Execute_GetObjectTraceElementName(*It), TWeakObjectPtr<AActor>(*It));
-				ITracedInterface::Execute_DispatchAddToSubsystem(*It);
+				if (ITracedInterface::Execute_GetIsOpenTrace(*It))
+				{
+					TraceObjectMap.FindOrAdd(ITracedInterface::Execute_GetObjectTraceElementName(*It), TWeakObjectPtr<AActor>(*It));
+					ITracedInterface::Execute_DispatchAddToSubsystem(*It);
+				}
 			}
 		}
 		return true;

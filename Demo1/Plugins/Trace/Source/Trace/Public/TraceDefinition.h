@@ -72,7 +72,7 @@ struct PointInfo
 	};
 
 	PointInfo(bool NewIsValid, const TArray<TPair<float, float>>& NewXYs, const FVector2D& NewNearestXY): IsValid(NewIsValid),
-		NearestXY(NewNearestXY.X, NewNearestXY.Y)
+	                                                                                                      NearestXY(NewNearestXY.X, NewNearestXY.Y)
 	{
 		for (const TPair<float, float>& XY : NewXYs)
 		{
@@ -128,9 +128,10 @@ public:
 	}
 
 	virtual void UpdateRange(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f) =0;
+	virtual std::pair<float, float> GetRange() const =0;
 
 	BaseProjectFunctionType(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f): Width(NewWidth), Height(NewHeight),
-		NotValidNumber(NewNotValidNumber)
+	                                                                                                            NotValidNumber(NewNotValidNumber)
 	{
 	};
 
@@ -187,6 +188,11 @@ public:
 			{Quadrant::Three, {XRange.first, YRange.first}},
 			{Quadrant::Four, {XRange.second, YRange.first}}
 		};
+	}
+
+	virtual std::pair<float, float> GetRange() const override
+	{
+		return {XRange.first, YRange.first};
 	}
 
 	virtual std::vector<float> Fx(float x) const override

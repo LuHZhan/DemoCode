@@ -40,4 +40,8 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, Category="Event")
 	void DispatchAddToSubsystem();
+
+	UFUNCTION(BlueprintNativeEvent, Category="Event")
+	bool GetIsOpenTrace();
+
 };
