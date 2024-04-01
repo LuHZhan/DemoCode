@@ -72,7 +72,7 @@ struct PointInfo
 	};
 
 	PointInfo(bool NewIsValid, const TArray<TPair<float, float>>& NewXYs, const FVector2D& NewNearestXY): IsValid(NewIsValid),
-	                                                                                                      NearestXY(NewNearestXY.X, NewNearestXY.Y)
+		NearestXY(NewNearestXY.X, NewNearestXY.Y)
 	{
 		for (const TPair<float, float>& XY : NewXYs)
 		{
@@ -131,7 +131,7 @@ public:
 	virtual std::pair<float, float> GetRange() const =0;
 
 	BaseProjectFunctionType(const float NewWidth, const float NewHeight, const float NewNotValidNumber = 0.0f): Width(NewWidth), Height(NewHeight),
-	                                                                                                            NotValidNumber(NewNotValidNumber)
+		NotValidNumber(NewNotValidNumber)
 	{
 	};
 
@@ -236,7 +236,6 @@ public:
 		if (UnKnownAxisMap.contains({Position, VectorDirection}))
 		{
 			const Axis CurAxis = UnKnownAxisMap.find({Position, VectorDirection})->second;
-			// TODO:这里的写法可以优化
 			if (CurAxis == Axis::X)
 			{
 				float XValue = YMax / a;

@@ -75,6 +75,9 @@ void UTraceSubsystem::Update(float DeltaTime)
 
 void UTraceSubsystem::Clear()
 {
+	ViewportWidgetWeakPtr->RemoveFromParent();
+	TraceUIActorMap.Empty();
+	TraceUIWidgetMap.Empty();
 }
 
 
@@ -233,7 +236,7 @@ FVector2D UTraceSubsystem::GetProjectCoordinateLimit() const
 	return FVector2D(0, 0);
 }
 
-// void UTraceSubsystem::a_Implementation(FString TraceActorName, FVector2D Parameter2D)
+// void UTraceSubsystem::a_Implementation()
 // {
 // 	
 // }
@@ -244,9 +247,9 @@ void UTraceSubsystem::GetSelectedUIStyle(const FString TraceActorName, const FVe
 	if (Parameter2D.X == Range.X || Parameter2D.X == Range.X * -1 || Parameter2D.Y == Range.Y || Parameter2D.Y == Range.Y * -1)
 	{
 		StyleType = EUIStyleType::Limit;
-		const float ClockWiseAngle = 360 - FMath::Acos((FVector(0, 100, 0).Dot(FVector(Data.X, Data.Y, 0)))
+		const float RawAngle = FMath::Acos((FVector(0, 100, 0).Dot(FVector(Data.X, Data.Y, 0)))
 			/ (100 * FVector(Data.X, Data.Y, 0).Length())) * 180 / UE_DOUBLE_PI;
-		Data.Z = ClockWiseAngle < 180 ? ClockWiseAngle : ClockWiseAngle - 360;
+		Data.Z = Data.X > 0 ? RawAngle : RawAngle * -1;
 		return;
 	}
 
@@ -276,6 +279,7 @@ void UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FV
 
 	// 获取MVP矩阵之后屏幕内[-1,1]之间的比例
 	const FVector4 TransformVec = ViewProjectionMatrix.TransformFVector4(FVector4(WorldLocation, 1));
+	// 常规的透视除法会导致镜头背面的物体的坐标异常，除以W的绝对值，镜像的将物体移动到镜头前面
 	const float AbsW = UKismetMathLibrary::Abs(TransformVec.W);
 	const FVector4 PerDivided = TransformVec / AbsW;
 
@@ -284,10 +288,18 @@ void UTraceSubsystem::GetProjectToScreen(APlayerController* PlayerController, FV
 	//                                   FString::Printf(TEXT("PerDivided::X==%f,Y==%f,Z==%f"), TransformVec.X / AbsW, TransformVec.Y / AbsW,
 	//                                                   TransformVec.Z / TransformVec.W));
 
+	// 这个是针对镜头高度基本等于物体高度，同时处于镜头的背面的情况，这个时候得到的数据并不处于边缘，但是因为是背面的缘故，也不处于镜头内
+	// 需要得到坐标的延伸至边缘的最大坐标，将坐标固定在边缘上
+	const float Constant = PerDivided.X > 0 ? 1 : -1;
+	const FVector2D MagnifyPerDivided = {Constant, Constant / PerDivided.X * PerDivided.Y};
+	const FVector2D CookedPerDivided = TransformVec.W > 0
+		                                   ? FVector2D{PerDivided.X, PerDivided.Y}
+		                                   : GetClosestLimitCoordinate({MagnifyPerDivided.X, MagnifyPerDivided.Y}, {1, 1});
+
 	// 将比例转化为具体的数值并返回
 	const FVector2D ViewportSize = GetFullScreenSize() / 2;
-	Result.X = PerDivided.X * ViewportSize.X;
-	Result.Y = PerDivided.Y * ViewportSize.Y;
+	Result.X = CookedPerDivided.X * ViewportSize.X;
+	Result.Y = CookedPerDivided.Y * ViewportSize.Y;
 }
 
 FVector2D UTraceSubsystem::GetFullScreenSize() const

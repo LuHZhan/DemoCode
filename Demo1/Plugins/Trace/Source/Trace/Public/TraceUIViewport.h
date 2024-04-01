@@ -49,6 +49,7 @@ struct FPlaneMoveData
 	FVector4 Data;
 };
 
+// TODO: 这里关于NormalUI和LimitUI的实现需要抽象出来，目前都耦合在一起了，拓展只能通过重写函数的方式实现
 UCLASS(Blueprintable, BlueprintType)
 class TRACE_API UTraceUIViewport : public UUserWidget
 {

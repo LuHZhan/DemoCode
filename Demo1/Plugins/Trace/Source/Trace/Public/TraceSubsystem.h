@@ -63,7 +63,7 @@ public:
 	                        EUIStyleType& StyleType, FVector4& Data) const;
 
 	// UFUNCTION(BlueprintCallable,BlueprintNativeEvent)
-	// void a(FString TraceActorName, FVector2D Parameter2D);
+	// void a();
 
 	UFUNCTION(BlueprintCallable)
 	bool UpdateLimitFuncRange(FVector2D NewRange);

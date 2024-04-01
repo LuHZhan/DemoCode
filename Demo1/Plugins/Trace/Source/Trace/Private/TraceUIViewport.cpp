@@ -34,7 +34,6 @@ void UTraceUIViewport::AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWi
 {
 	if (UIData.Contains(Name))
 	{
-		// TODO: 在Update的时候,数据也需要更新
 		UIData[Name].NormalUI = NormalUI;
 		UIData[Name].LimitUI = LimitUI;
 		UIData[Name].CurStyleType = CurStyleType;
@@ -46,7 +45,7 @@ void UTraceUIViewport::AddOrUpdateUI(const FString& Name, TWeakObjectPtr<UUserWi
 		UIData.Add(Name, FPlaneMoveData(NormalUI, LimitUI, Data, CurStyleType));
 		LoadCanvas();
 	}
-	UKismetSystemLibrary::PrintString(GetWorld(), Data.ToString());
+	// UKismetSystemLibrary::PrintString(GetWorld(), Data.ToString());
 	// UpdateCanvas();
 }
 
