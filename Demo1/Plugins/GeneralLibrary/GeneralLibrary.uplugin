@@ -18,7 +18,17 @@
 		{
 			"Name": "GeneralLibrary",
 			"Type": "Runtime",
-			"LoadingPhase": "PreLoadingScreen"
+			"LoadingPhase": "PreLoadingScreen" 
+		},
+		{
+			"Name": "GeneralWidget",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "GeneralDefinition",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
 		}
 	]
 }
