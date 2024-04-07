@@ -45,6 +45,9 @@ public:
 	void OnUnhovered();
 
 	UFUNCTION(BlueprintCallable)
+	void OnClicked();
+
+	UFUNCTION(BlueprintCallable)
 	void SetState(EBtnStateType NewState);
 
 	UFUNCTION(BlueprintCallable)
@@ -56,24 +59,27 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	EBtnStateType TransitionState(EBtnActionType NewAction);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SwitchMachine)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Switch Machine|State Data")
 	UButton* ActionBtn;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SwitchMachine)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Switch Machine|State Data")
 	EBtnStateType CurStateType = EBtnStateType::Start;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SwitchMachine)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Switch Machine|State Data")
 	EBtnActionType CurActionType = EBtnActionType::NoneAction;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SwitchMachine)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Switch Machine|State Data", meta=(ExposeOnSpawn=true))
 	EBtnClickedType CurClickedType = EBtnClickedType::NoHoverSwitch;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=StateMap)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Switch Machine|State Map")
 	TMap<EBtnStateType, int> StateIndexMap;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=StateMap)
-	TMap<int, UOverlay*> IndexChildMap;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Switch Machine|State Map")
+	TMap<int, UUserWidget*> IndexChildMap;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SwitchMachine)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Switch Machine|State Data")
 	UStateMachineBtnDataAsset* DA_StateMachine;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Switch Machine|State Data", meta=(ExposeOnSpawn=true))
+	bool bIsUseDefaultContent = true;
 };

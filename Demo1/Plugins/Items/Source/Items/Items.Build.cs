@@ -26,6 +26,7 @@ public class Items : ModuleRules
 			new string[]
 			{
 				"Core",
+				"GeneralDefinition"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

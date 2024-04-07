@@ -6,27 +6,24 @@
 void UStateMachineBtn::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	// if (bIsInit)
-	// {
-	// 	Init();
-	// }
 }
 
 void UStateMachineBtn::Init()
 {
-	ActionBtn->OnPressed.AddDynamic(this, &UStateMachineBtn::OnPressed);
-	ActionBtn->OnReleased.AddDynamic(this, &UStateMachineBtn::OnReleased);
-	ActionBtn->OnHovered.AddDynamic(this, &UStateMachineBtn::OnHovered);
-	ActionBtn->OnUnhovered.AddDynamic(this, &UStateMachineBtn::OnUnhovered);
+	if (CurClickedType == EBtnClickedType::Highlight || CurClickedType == EBtnClickedType::Switch || CurClickedType == EBtnClickedType::Close)
+	{
+		ActionBtn->OnHovered.AddDynamic(this, &UStateMachineBtn::OnHovered);
+		ActionBtn->OnUnhovered.AddDynamic(this, &UStateMachineBtn::OnUnhovered);
+	}
+	else if (CurClickedType == EBtnClickedType::Freedom)
+	{
+		ActionBtn->OnPressed.AddDynamic(this, &UStateMachineBtn::OnPressed);
+		ActionBtn->OnReleased.AddDynamic(this, &UStateMachineBtn::OnReleased);
+		ActionBtn->OnHovered.AddDynamic(this, &UStateMachineBtn::OnHovered);
+		ActionBtn->OnUnhovered.AddDynamic(this, &UStateMachineBtn::OnUnhovered);
+	}
 
-	// StateIndexMap.Empty();
-	// StateIndexMap.Add(EBtnStateType::Start, 0);
-	// StateIndexMap.Add(EBtnStateType::Hovered, 1);
-	// StateIndexMap.Add(EBtnStateType::Pressed, 2);
-	// StateIndexMap.Add(EBtnStateType::Released, 3);
-	// StateIndexMap.Add(EBtnStateType::Unhovered, 4);
-	// StateIndexMap.Add(EBtnStateType::Unhovered, 5);
+	ActionBtn->OnClicked.AddDynamic(this, &UStateMachineBtn::OnClicked);
 }
 
 FStateMachineInfo UStateMachineBtn::GetDataAsset() const
@@ -45,7 +42,7 @@ EBtnStateType UStateMachineBtn::GetStateFromDataAsset(EBtnActionType NewAction, 
 		{
 			if (const FStateAfterActionPerFormed* ActionMap = InfoList->ActionWithStatePair.Find(CurStateType); ActionMap)
 			{
-				if (const EBtnStateType* NewState = ActionMap->ActionWithState.Find(NewAction); ActionMap)
+				if (const EBtnStateType* NewState = ActionMap->ActionWithState.Find(NewAction); NewState)
 				{
 					Result = *NewState;
 					bIsContainer = true;
@@ -77,6 +74,12 @@ void UStateMachineBtn::OnHovered()
 void UStateMachineBtn::OnUnhovered()
 {
 	SetAction(EBtnActionType::UnhoveredAction);
+	TransitionState(CurActionType);
+}
+
+void UStateMachineBtn::OnClicked()
+{
+	SetAction(EBtnActionType::ClickedAction);
 	TransitionState(CurActionType);
 }
 
