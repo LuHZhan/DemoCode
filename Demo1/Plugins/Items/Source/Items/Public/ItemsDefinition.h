@@ -34,6 +34,9 @@ enum class EQuality:uint8
 	Unique,
 };
 
+/**
+ * 物品的基础信息
+ */
 USTRUCT(Blueprintable, BlueprintType)
 struct FItemsInfo
 {
@@ -62,6 +65,25 @@ struct FItemsInfo
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UTexture2D* Icon;
+};
+
+USTRUCT(Blueprintable, BlueprintType)
+struct FItemsArray
+{
+	GENERATED_BODY()
+
+	FItemsArray()
+	{
+		ItemsArray.Empty();
+	}
+
+	explicit FItemsArray(const TArray<FItemsInfo>& InItemsArray)
+	{
+		ItemsArray = InItemsArray;
+	};
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn=true))
+	TArray<FItemsInfo> ItemsArray;
 };
 
 USTRUCT(Blueprintable, BlueprintType)

@@ -26,6 +26,8 @@ public class Backpack : ModuleRules
 			new string[]
 			{
 				"Core",
+				"Items",
+				"GeneralDefinition"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
