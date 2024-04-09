@@ -12,6 +12,8 @@ class GENERALDEFINITION_API AWidgetDefinition : public AActor
 	GENERATED_BODY()
 };
 
+//------------------- StateMachineBtn ------------------- //
+
 UENUM(Blueprintable, BlueprintType)
 enum class EBtnStateType:uint8
 {
@@ -111,4 +113,24 @@ struct FStateMachineInfo
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TMap<EBtnClickedType, FStateInfo> Info;
+};
+
+//------------------- PromptDialogBox ------------------- //
+
+USTRUCT(Blueprintable, BlueprintType)
+struct FPromptDialogBoxSettingInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsUseDefaultText = true;
+
+	UPROPERTY(EditAnywhere, meta=(EditCondition="bIsUseDefaultText"))
+	FText Text;
+
+	UPROPERTY(EditAnywhere, meta=(EditCondition="bIsUseDefaultText"))
+	UUserWidget* CustomWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FString> BtnTexts;
 };

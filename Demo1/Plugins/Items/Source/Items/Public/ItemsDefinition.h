@@ -34,6 +34,18 @@ enum class EQuality:uint8
 	Unique,
 };
 
+UENUM(Blueprintable, BlueprintType)
+enum class EItemsType:uint8
+{
+	Materials,
+	Weapons,
+	Equipment,
+	Consumables,
+	Props,
+	Resources,
+	Quests,
+};
+
 /**
  * 物品的基础信息
  */
@@ -62,6 +74,9 @@ struct FItemsInfo
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EQuality Quality;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EItemsType ItemsType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UTexture2D* Icon;

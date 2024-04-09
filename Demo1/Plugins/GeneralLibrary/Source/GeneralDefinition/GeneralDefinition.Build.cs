@@ -10,6 +10,7 @@ public class GeneralDefinition : ModuleRules
             new string[]
             {
                 "Core",
+                "UMG",
             }
         );
 
