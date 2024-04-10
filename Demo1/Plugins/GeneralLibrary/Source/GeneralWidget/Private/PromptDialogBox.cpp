@@ -19,7 +19,27 @@ void UPromptDialogBox::BindBtnEvent()
 void UPromptDialogBox::NativeConstruct()
 {
 	Super::NativeConstruct();
+	CreateAndLoadBtnMap();
 	BindBtnEvent();
+	
+	Execute_GenUpdate(this);
+	UpdateGenWidget(this);
+}
+
+TMap<FString, UPromptDialogBoxBtn*> UPromptDialogBox::CreateAndLoadBtnMap_Implementation()
+{
+	TMap<FString, UPromptDialogBoxBtn*> LocalBtnMap;
+
+	for (FString BtnName : SettingInfo.BtnNames)
+	{
+		UPromptDialogBoxBtn* NewBtn = CreateWidget<UPromptDialogBoxBtn>(GetWorld());
+		NewBtn->CurName = BtnName;
+		NewBtn->BtnSize = SettingInfo.BtnSize;
+		LocalBtnMap.Add(BtnName, NewBtn);
+	}
+
+	BtnMap = LocalBtnMap;
+	return LocalBtnMap;
 }
 
 void UPromptDialogBox::SendDelegate_Implementation(UPromptDialogBoxBtn* Btn, const FString& BtnName)

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "UObject/Interface.h"
 #include "WidgetDefinition.generated.h"
 
 UCLASS()
@@ -11,6 +11,31 @@ class GENERALDEFINITION_API AWidgetDefinition : public AActor
 {
 	GENERATED_BODY()
 };
+
+USTRUCT(Blueprintable, BlueprintType)
+struct FTextFontInfo
+{
+	GENERATED_BODY()
+	FTextFontInfo()
+	{
+		Text = FText::FromString("None");
+		Color = FColor(255, 255, 255, 255);
+	}
+
+	FTextFontInfo(const float InSize, const FText& InText, const FColor InColor): Size(InSize), Text(InText), Color(InColor)
+	{
+	};
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Size = 18.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FText Text;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FColor Color;
+};
+
 
 //------------------- StateMachineBtn ------------------- //
 
@@ -125,12 +150,22 @@ struct FPromptDialogBoxSettingInfo
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsUseDefaultText = true;
 
-	UPROPERTY(EditAnywhere, meta=(EditCondition="bIsUseDefaultText"))
-	FText Text;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(EditCondition="bIsUseDefaultText"))
+	TArray<FTextFontInfo> TextInfo;
 
-	UPROPERTY(EditAnywhere, meta=(EditCondition="bIsUseDefaultText"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(EditCondition="!bIsUseDefaultText"))
 	UUserWidget* CustomWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FString> BtnTexts;
+	FTextFontInfo CurContentText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector2D CurSize;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FString> BtnNames;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector2D BtnSize;
+	
 };

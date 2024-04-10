@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 
 #include "WidgetDefinition.h"
+#include "ConstructGenInterface.h"
 #include "PromptDialogBoxBtn.h"
 
 #include "PromptDialogBox.generated.h"
@@ -16,7 +17,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnClickBtnDelegate, UPromptDialogB
  * 
  */
 UCLASS(Blueprintable, BlueprintType)
-class GENERALWIDGET_API UPromptDialogBox : public UUserWidget
+class GENERALWIDGET_API UPromptDialogBox : public UUserWidget, public IConstructGenInterface
 {
 	GENERATED_BODY()
 
@@ -31,10 +32,13 @@ public:
 
 	virtual void NativeConstruct() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn=true))
+	UFUNCTION(BlueprintNativeEvent)
+	TMap<FString, UPromptDialogBoxBtn*> CreateAndLoadBtnMap();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn=true), Category="Config")
 	FPromptDialogBoxSettingInfo SettingInfo;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Config")
 	TMap<FString, UPromptDialogBoxBtn*> BtnMap;
 
 	UPROPERTY(BlueprintAssignable)

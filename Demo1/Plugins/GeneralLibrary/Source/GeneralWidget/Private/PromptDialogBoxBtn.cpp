@@ -12,9 +12,12 @@ void UPromptDialogBoxBtn::NativeConstruct()
 {
 	Super::NativeConstruct();
 	BtnBind();
+
+	Execute_GenUpdate(this);
+	UpdateGenWidget(this);
 }
 
 void UPromptDialogBoxBtn::OnClicked_Implementation()
 {
-	OnClickedDelegate.Broadcast(this, BtnName);
+	OnClickedDelegate.Broadcast(this, CurName);
 }

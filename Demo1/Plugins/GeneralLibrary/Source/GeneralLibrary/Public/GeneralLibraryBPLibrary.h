@@ -2,7 +2,11 @@
 
 #pragma once
 
+#include "Components/TextBlock.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+
+#include "WidgetDefinition.h"
+
 #include "GeneralLibraryBPLibrary.generated.h"
 
 /* 
@@ -26,7 +30,13 @@ UCLASS()
 class UGeneralLibraryBPLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_UCLASS_BODY()
-
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Execute Sample function", Keywords = "GeneralLibrary sample test testing"), Category = "GeneralLibraryTesting")
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Execute Sample function", Keywords = "GeneralLibrary sample test testing"),
+		Category = "GeneralLibraryTesting")
 	static float GeneralLibrarySampleFunction(float Param);
+
+	UFUNCTION(BlueprintCallable)
+	static bool SetTextBlockInfo(UTextBlock* Widget, FTextFontInfo TextFontInfo);
+
+	UFUNCTION(BlueprintCallable)
+	static void UpdateGenWidget(UUserWidget* CurUserWidget);
 };

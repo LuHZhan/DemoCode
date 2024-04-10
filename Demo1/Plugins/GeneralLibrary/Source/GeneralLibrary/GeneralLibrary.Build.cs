@@ -26,6 +26,8 @@ public class GeneralLibrary : ModuleRules
 			new string[]
 			{
 				"Core",
+				"UMG",
+				"GeneralDefinition"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -37,7 +39,8 @@ public class GeneralLibrary : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore",
+				"SlateCore", 
+				"GeneralWidget",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
