@@ -6,7 +6,7 @@
 
 // Add default functionality here for any IConstructGenInterface functions that are not pure virtual.
 
-void IConstructGenInterface::UpdateGenWidget(UUserWidget* CurUserWidget)
+void IConstructGenInterface::GenUpdateGenWidget(UUserWidget* CurUserWidget)
 {
 	TArray<UWidget*> GenWidgetList;
 	GetAllGenWidget(CurUserWidget, GenWidgetList);
@@ -30,4 +30,19 @@ void IConstructGenInterface::GetAllGenWidget(UUserWidget* CurUserWidget, TArray<
 			}
 		}
 	}
+}
+
+void IConstructGenInterface::GenConstruct(UObject* Target)
+{
+	if (Target->GetClass()->ImplementsInterface(UConstructGenInterface::StaticClass()))
+	{
+		Execute_BPGenConstruct(Target);
+	}
+}
+
+void IConstructGenInterface::GenNativeConstruct(UUserWidget* Target)
+{
+	GenConstruct(Target);
+	Execute_GenUpdate(Target);
+	GenUpdateGenWidget(Target);
 }

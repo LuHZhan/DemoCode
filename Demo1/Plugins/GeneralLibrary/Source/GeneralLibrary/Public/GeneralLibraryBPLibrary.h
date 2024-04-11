@@ -39,4 +39,7 @@ class UGeneralLibraryBPLibrary : public UBlueprintFunctionLibrary
 
 	UFUNCTION(BlueprintCallable)
 	static void UpdateGenWidget(UUserWidget* CurUserWidget);
+
+	UFUNCTION(BlueprintCallable)
+	static TSubclassOf<UObject> PathIsValid(const FString& Path);
 };

@@ -9,7 +9,6 @@
 #include "ItemsDefinition.h"
 
 #include "BackpackFunLibrary.generated.h"
-
 /**
  * 
  */
@@ -21,4 +20,6 @@ class BACKPACK_API UBackpackFunLibrary : public UBlueprintFunctionLibrary
 public:
 	UFUNCTION(BlueprintCallable, Category = "Backpack")
 	static TArray<FItemsArray> FiltrationFromTotalItemsInfo(const TArray<FItemsInfo>& TotalItemsInfo, const FBackpackSettingInfo& SettingInfo);
+	
+
 };

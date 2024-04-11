@@ -161,11 +161,15 @@ struct FPromptDialogBoxSettingInfo
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector2D CurSize;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FString> BtnNames;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector2D BtnSize;
-	
+	FVector2D BtnSize = {80, 40};
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString BtnPath = TEXT("WidgetBlueprint '/GeneralLibrary/GeneralWidget/PromptDialogBox/WBP_Gen_PromptDialogBoxBtn.WBP_Gen_PromptDialogBoxBtn_C'");
 };
+
+// /Script/UMGEditor.WidgetBlueprint'/GeneralLibrary/GeneralWidget/PromptDialogBox/WBP_Gen_PromptDialogBoxBtn.WBP_Gen_PromptDialogBoxBtn'

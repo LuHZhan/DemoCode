@@ -37,7 +37,7 @@ void UGeneralLibraryBPLibrary::UpdateGenWidget(UUserWidget* CurUserWidget)
 	{
 		IConstructGenInterface::Execute_GenUpdate(CurUserWidget);
 	}
-	
+
 	TArray<UWidget*> Widgets;
 	CurUserWidget->WidgetTree.Get()->GetAllWidgets(Widgets);
 	for (auto Widget : Widgets)
@@ -47,4 +47,9 @@ void UGeneralLibraryBPLibrary::UpdateGenWidget(UUserWidget* CurUserWidget)
 			IConstructGenInterface::Execute_GenUpdate(Widget);
 		}
 	}
+}
+
+TSubclassOf<UObject> UGeneralLibraryBPLibrary::PathIsValid(const FString& Path)
+{
+	return LoadClass<UObject>(nullptr, *Path);
 }

@@ -32,6 +32,8 @@ public:
 
 	virtual void NativeConstruct() override;
 
+	virtual void GenConstruct(UObject* Target) override;
+	
 	UFUNCTION(BlueprintNativeEvent)
 	TMap<FString, UPromptDialogBoxBtn*> CreateAndLoadBtnMap();
 
