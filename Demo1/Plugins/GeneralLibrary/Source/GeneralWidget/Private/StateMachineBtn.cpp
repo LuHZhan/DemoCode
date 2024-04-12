@@ -79,7 +79,7 @@ void UStateMachineBtn::OnUnhovered()
 
 void UStateMachineBtn::OnClicked()
 {
-	SetAction(EBtnActionType::ClickedAction);
+	SetAction(EBtnActionType::LeftClickedAction);
 	TransitionState(CurActionType);
 }
 

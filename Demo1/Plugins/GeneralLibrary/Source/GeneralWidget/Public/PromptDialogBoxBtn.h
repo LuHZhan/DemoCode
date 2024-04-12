@@ -31,7 +31,7 @@ public:
 	virtual void NativeConstruct() override;
 
 	
-	virtual void GenConstruct(UObject* Target) override;
+	virtual void Internal_GenConstruct(UObject* Target) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ExposeOnSpawn=true), Category="Config")
 	FString CurName = "PromptDialogBox";

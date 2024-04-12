@@ -48,7 +48,8 @@ enum class EBtnStateType:uint8
 	Pressed,
 	Released,
 	// TODO: 这里加入Clicked是因为使用Pressed和Released会导致Switch的模式不好实现，两种点击都走的Pressed的通道
-	Clicked,
+	LeftClicked,
+	RightClicked,
 	Hovered,
 	Unhovered,
 	Close,
@@ -61,7 +62,8 @@ enum class EBtnActionType:uint8
 	PressedAction,
 	ReleasedAction,
 	// TODO: 这里加入Clicked是因为使用Pressed和Released会导致Switch的模式不好实现，两种点击都走的Pressed的通道
-	ClickedAction,
+	LeftClickedAction,
+	RightClickedAction,
 	HoveredAction,
 	UnhoveredAction,
 };
@@ -89,7 +91,7 @@ struct FStateAfterActionPerFormed
 		ActionWithState.Empty();
 		ActionWithState.Add(EBtnActionType::PressedAction, EBtnStateType::None);
 		ActionWithState.Add(EBtnActionType::ReleasedAction, EBtnStateType::None);
-		ActionWithState.Add(EBtnActionType::ClickedAction, EBtnStateType::None);
+		ActionWithState.Add(EBtnActionType::LeftClickedAction, EBtnStateType::None);
 		ActionWithState.Add(EBtnActionType::HoveredAction, EBtnStateType::None);
 		ActionWithState.Add(EBtnActionType::UnhoveredAction, EBtnStateType::None);
 	}
@@ -110,7 +112,7 @@ struct FStateInfo
 		ActionWithStatePair.Add(EBtnStateType::Normal, FStateAfterActionPerFormed());
 		ActionWithStatePair.Add(EBtnStateType::Pressed, FStateAfterActionPerFormed());
 		ActionWithStatePair.Add(EBtnStateType::Released, FStateAfterActionPerFormed());
-		ActionWithStatePair.Add(EBtnStateType::Clicked, FStateAfterActionPerFormed());
+		ActionWithStatePair.Add(EBtnStateType::LeftClicked, FStateAfterActionPerFormed());
 		ActionWithStatePair.Add(EBtnStateType::Hovered, FStateAfterActionPerFormed());
 		ActionWithStatePair.Add(EBtnStateType::Unhovered, FStateAfterActionPerFormed());
 		ActionWithStatePair.Add(EBtnStateType::Close, FStateAfterActionPerFormed());
@@ -169,7 +171,7 @@ struct FPromptDialogBoxSettingInfo
 	FVector2D BtnSize = {80, 40};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString BtnPath = TEXT("WidgetBlueprint '/GeneralLibrary/GeneralWidget/PromptDialogBox/WBP_Gen_PromptDialogBoxBtn.WBP_Gen_PromptDialogBoxBtn_C'");
+	FString BtnClassPath = TEXT("WidgetBlueprint '/GeneralLibrary/GeneralWidget/PromptDialogBox/WBP_Gen_PromptDialogBoxBtn.WBP_Gen_PromptDialogBoxBtn_C'");
 };
 
 // /Script/UMGEditor.WidgetBlueprint'/GeneralLibrary/GeneralWidget/PromptDialogBox/WBP_Gen_PromptDialogBoxBtn.WBP_Gen_PromptDialogBoxBtn'

@@ -8,11 +8,18 @@
 
 void IConstructGenInterface::GenUpdateGenWidget(UUserWidget* CurUserWidget)
 {
+	Execute_GenUpdate(CurUserWidget);
 	TArray<UWidget*> GenWidgetList;
 	GetAllGenWidget(CurUserWidget, GenWidgetList);
-	for (auto Widget : GenWidgetList)
+	
+	if (GenWidgetList.IsEmpty())
 	{
-		Execute_GenUpdate(Widget);
+		return;
+	}
+	for (UWidget* Widget : GenWidgetList)
+	{
+		UUserWidget* UserWidget = Cast<UUserWidget>(Widget);
+		GenUpdateGenWidget(UserWidget);
 	}
 }
 
@@ -32,17 +39,16 @@ void IConstructGenInterface::GetAllGenWidget(UUserWidget* CurUserWidget, TArray<
 	}
 }
 
-void IConstructGenInterface::GenConstruct(UObject* Target)
+void IConstructGenInterface::Internal_GenConstruct(UObject* Target)
 {
 	if (Target->GetClass()->ImplementsInterface(UConstructGenInterface::StaticClass()))
 	{
-		Execute_BPGenConstruct(Target);
+		Execute_GenConstruct(Target);
 	}
 }
 
 void IConstructGenInterface::GenNativeConstruct(UUserWidget* Target)
 {
-	GenConstruct(Target);
-	Execute_GenUpdate(Target);
+	Internal_GenConstruct(Target);
 	GenUpdateGenWidget(Target);
 }

@@ -113,7 +113,7 @@ struct FStateTextureInfo
 		StateTextureInfo.Add(EBtnStateType::Normal, nullptr);
 		StateTextureInfo.Add(EBtnStateType::Pressed, nullptr);
 		StateTextureInfo.Add(EBtnStateType::Released, nullptr);
-		StateTextureInfo.Add(EBtnStateType::Clicked, nullptr);
+		StateTextureInfo.Add(EBtnStateType::LeftClicked, nullptr);
 		StateTextureInfo.Add(EBtnStateType::Hovered, nullptr);
 		StateTextureInfo.Add(EBtnStateType::Unhovered, nullptr);
 		StateTextureInfo.Add(EBtnStateType::Close, nullptr);

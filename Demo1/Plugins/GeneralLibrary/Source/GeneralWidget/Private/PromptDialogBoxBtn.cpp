@@ -14,16 +14,16 @@ void UPromptDialogBoxBtn::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	GenNativeConstruct(this);
-	// GenConstruct(this);
+	// GenNativeConstruct(this);
+	Internal_GenConstruct(this);
 	// Execute_GenUpdate(this);
 	// GenUpdateGenWidget(this);
 }
 
-void UPromptDialogBoxBtn::GenConstruct(UObject* Target)
+void UPromptDialogBoxBtn::Internal_GenConstruct(UObject* Target)
 {
 	BtnBind();
-	IConstructGenInterface::GenConstruct(this);
+	IConstructGenInterface::Internal_GenConstruct(Target);
 }
 
 void UPromptDialogBoxBtn::OnClicked_Implementation()

@@ -26,11 +26,11 @@ void UPromptDialogBox::NativeConstruct()
 	// GenUpdateGenWidget(this);
 }
 
-void UPromptDialogBox::GenConstruct(UObject* Target)
+void UPromptDialogBox::Internal_GenConstruct(UObject* Target)
 {
 	CreateAndLoadBtnMap();
 	BindBtnEvent();
-	IConstructGenInterface::GenConstruct(Target);
+	IConstructGenInterface::Internal_GenConstruct(Target);
 }
 
 // /Script/UMGEditor.WidgetBlueprint'/GeneralLibrary/GeneralWidget/PromptDialogBox/WBP_Gen_PromptDialogBoxBtn.WBP_Gen_PromptDialogBoxBtn'
@@ -40,7 +40,7 @@ TMap<FString, UPromptDialogBoxBtn*> UPromptDialogBox::CreateAndLoadBtnMap_Implem
 	TMap<FString, UPromptDialogBoxBtn*> LocalBtnMap;
 	for (FString BtnName : SettingInfo.BtnNames)
 	{
-		UPromptDialogBoxBtn* NewBtn = NewObject<UPromptDialogBoxBtn>(GetWorld(), LoadClass<UPromptDialogBoxBtn>(nullptr, *SettingInfo.BtnPath));
+		UPromptDialogBoxBtn* NewBtn = NewObject<UPromptDialogBoxBtn>(GetWorld(), LoadClass<UPromptDialogBoxBtn>(nullptr, *SettingInfo.BtnClassPath));
 		NewBtn->CurName = BtnName;
 		NewBtn->BtnSize = SettingInfo.BtnSize;
 		LocalBtnMap.Add(BtnName, NewBtn);
