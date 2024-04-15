@@ -42,4 +42,7 @@ class UGeneralLibraryBPLibrary : public UBlueprintFunctionLibrary
 
 	UFUNCTION(BlueprintCallable)
 	static TSubclassOf<UObject> PathIsValid(const FString& Path);
+
+	UFUNCTION(BlueprintCallable)
+	static FVector2D GetWidgetLocalPosition(UWidget* PanelWidget, UWidget* TargetWidget);
 };
