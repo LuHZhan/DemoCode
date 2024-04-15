@@ -53,3 +53,16 @@ TSubclassOf<UObject> UGeneralLibraryBPLibrary::PathIsValid(const FString& Path)
 {
 	return LoadClass<UObject>(nullptr, *Path);
 }
+
+FVector2D UGeneralLibraryBPLibrary::GetWidgetLocalPosition(UWidget* PanelWidget, UWidget* TargetWidget)
+{
+	if (PanelWidget)
+	{
+		const FGeometry Geometry = PanelWidget->GetCachedGeometry();
+		FVector2D Size = TargetWidget->GetCachedGeometry().GetLocalSize() / 2.0f;
+		const FVector2D Position = Geometry.AbsoluteToLocal(TargetWidget->GetCachedGeometry().GetAbsolutePosition()) + Size;
+
+		return Position;
+	}
+	return FVector2D::ZeroVector;
+}
