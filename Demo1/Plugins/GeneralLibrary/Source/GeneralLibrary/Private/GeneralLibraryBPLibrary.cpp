@@ -59,10 +59,10 @@ FVector2D UGeneralLibraryBPLibrary::GetWidgetLocalPosition(UWidget* PanelWidget,
 	if (PanelWidget)
 	{
 		const FGeometry Geometry = PanelWidget->GetCachedGeometry();
-		FVector2D Size = TargetWidget->GetCachedGeometry().GetLocalSize() / 2.0f;
-		const FVector2D Position = Geometry.AbsoluteToLocal(TargetWidget->GetCachedGeometry().GetAbsolutePosition()) + Size;
+		const FVector2D Size = TargetWidget->GetCachedGeometry().GetLocalSize() / 2.0f;
+		const FVector2D Position = Geometry.AbsoluteToLocal(TargetWidget->GetCachedGeometry().GetAbsolutePosition());
 
-		return Position;
+		return Position + Size;
 	}
 	return FVector2D::ZeroVector;
 }
