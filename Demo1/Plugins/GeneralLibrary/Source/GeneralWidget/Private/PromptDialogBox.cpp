@@ -38,12 +38,12 @@ void UPromptDialogBox::Internal_GenConstruct(UObject* Target)
 TMap<FString, UPromptDialogBoxBtn*> UPromptDialogBox::CreateAndLoadBtnMap_Implementation()
 {
 	TMap<FString, UPromptDialogBoxBtn*> LocalBtnMap;
-	for (FString BtnName : SettingInfo.BtnNames)
+	for (int i = 0; i < SettingInfo.BtnNames.Num(); ++i)
 	{
 		UPromptDialogBoxBtn* NewBtn = NewObject<UPromptDialogBoxBtn>(GetWorld(), LoadClass<UPromptDialogBoxBtn>(nullptr, *SettingInfo.BtnClassPath));
-		NewBtn->CurName = BtnName;
-		NewBtn->BtnSize = SettingInfo.BtnSize;
-		LocalBtnMap.Add(BtnName, NewBtn);
+		NewBtn->CurName = SettingInfo.BtnNames[i];
+		NewBtn->BtnSize = SettingInfo.BtnSize[i];
+		LocalBtnMap.Add(SettingInfo.BtnNames[i], NewBtn);
 	}
 
 	BtnMap = LocalBtnMap;

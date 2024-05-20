@@ -168,7 +168,7 @@ struct FPromptDialogBoxSettingInfo
 	TArray<FString> BtnNames;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector2D BtnSize = {80, 40};
+	TArray<FVector2D> BtnSize;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString BtnClassPath = TEXT("WidgetBlueprint '/GeneralLibrary/GeneralWidget/PromptDialogBox/WBP_Gen_PromptDialogBoxBtn.WBP_Gen_PromptDialogBoxBtn_C'");
